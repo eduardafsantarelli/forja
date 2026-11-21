@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0b">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="FORJA: seu treino, sua alimentação e sua evolução no mesmo lugar.">
+  <title>FORJA — Treino & Nutrição</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="FORJA">
+  <meta property="og:title" content="FORJA — Treino & Nutrição">
+  <meta property="og:description" content="Seu treino, sua alimentação e sua evolução no mesmo lugar.">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23ff591f'/%3E%3Cpath d='M11 9h21v6H18v5h10v6H18v10h-7z' fill='black'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+  <link rel="preload" as="image" href="assets/strength.webp">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="storage.js?v=firebase-auth-v5"></script>
+  <script defer src="app.js?v=firebase-auth-v5"></script>
+  <script defer src="experience.js?v=firebase-auth-v5"></script>
+  <script type="module" src="firebase.js?v=firebase-auth-v5"></script>
+</head>
+
+<body>
+  <a class="skip-link" href="#app">Pular para o conteúdo</a>
+  <div class="scroll-progress"></div>
+  <header>
+    <a class="brand" href="#inicio" aria-label="Forja início">
+      <span class="brand-icon">F</span> FORJA<span class="brand-caption">TRAINING CLUB</span>
+    </a>
+    <nav aria-label="Navegação principal">
+      <a href="#inicio">Início</a>
+      <a href="#treinos">Treinos</a>
+      <a href="#dieta">Alimentação</a>
+      <a href="#evolucao">Evolução</a>
+      <a href="#sobre">Sobre</a>
+    </nav>
+    <div class="account-actions">
+      <button class="button secondary small theme-toggle" type="button" data-theme-toggle aria-label="Alternar para o modo claro" aria-pressed="false" title="Alternar para o modo claro"><span aria-hidden="true">◐</span></button>
+      <button class="button secondary small" id="auth-trigger" type="button">Entrar / criar conta</button>
+      <a class="profile-link" href="#perfil" aria-label="Abrir meu perfil">
+        <span class="avatar" id="header-avatar" aria-hidden="true">F</span>
+        <span>Meu perfil</span>
+      </a>
+    </div>
+  </header>
+  <main id="app" tabindex="-1"></main>
+  <noscript>
+    <p class="noscript-message">O FORJA precisa do JavaScript ativado para funcionar. Ative-o nas configurações do navegador e recarregue a página.</p>
+  </noscript>
+  <footer>
+    <a class="brand" href="#inicio">FORJA<span class="orange">.</span></a>
+    <p>Uma repetição. Uma escolha. Um dia de cada vez.</p>
+    <small>Seus registros ficam salvos neste dispositivo.</small>
+  </footer>
+  <dialog id="modal" aria-labelledby="modal-title">
+    <div class="modal-top">
+      <p class="eyebrow">SEU PRÓXIMO PASSO</p><button class="icon-button" id="close-modal" type="button"
+        aria-label="Fechar">×</button>
+    </div>
+    <h2 id="modal-title"></h2>
+    <form id="modal-form"></form>
+  </dialog>
+  <dialog id="auth-modal" aria-labelledby="auth-title">
+    <div class="modal-top">
+      <p class="eyebrow">CONTA FIREBASE</p>
+      <button class="icon-button" id="close-auth" type="button" aria-label="Fechar">×</button>
+    </div>
+    <h2 id="auth-title">Entre na sua conta</h2>
+    <p id="auth-intro" class="auth-intro">Carregando instruções de acesso.</p>
+    <div class="auth-tabs" role="tablist" aria-label="Acesso">
+      <button type="button" class="auth-tab active" data-auth-mode="login" role="tab" aria-selected="true" aria-controls="auth-form">Entrar</button>
+      <button type="button" class="auth-tab" data-auth-mode="register" role="tab" aria-selected="false" aria-controls="auth-form">Criar conta</button>
+    </div>
+    <form id="auth-form"></form>
+    <p class="help">O login Firebase funciona em qualquer navegador com o mesmo e-mail e senha. Perfil, treinos e registros ficam neste dispositivo, separados por conta, e não são sincronizados entre dispositivos.</p>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+
+</html>

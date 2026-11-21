@@ -1,0 +1,18 @@
+# Logs (podem conter dados da máquina local)
+*.log
+firebase-debug.log*
+
+# Firebase CLI
+.firebase/
+
+# Dependências e ambiente
+node_modules/
+.env
+.env.*
+
+# Netlify CLI
+.netlify/
+
+# Sistema
+.DS_Store
+Thumbs.db
