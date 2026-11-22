@@ -2532,7 +2532,7 @@ html[data-theme="light"] .date-pill {
 
 /* Foto da equipe centralizada, sem cortes e mantendo a proporção original */
 .team-photo { width: min(100%, 960px); margin: 28px auto 0; text-align: center; }
-.team-photo img { display: block; width: 100%; height: auto; max-height: 640px; aspect-ratio: auto; object-fit: contain; margin: 0 auto; background: var(--surface-2); }
+.team-photo img { display: block; width: auto; max-width: 100%; height: auto; max-height: 640px; aspect-ratio: auto; object-fit: contain; margin: 0 auto; }
 .team-photo figcaption { text-align: center; }
 
 /* Gráficos seguem o tema */
@@ -2547,6 +2547,7 @@ html[data-theme="light"] .date-pill {
 .daily-goal-text strong { font-weight: 600; color: var(--white); overflow-wrap: anywhere; }
 .daily-goal-text small { color: var(--text-soft); font-size: 13px; overflow-wrap: anywhere; }
 .daily-goal-text em { color: var(--muted); font-size: 12px; font-style: normal; letter-spacing: .3px; }
+.daily-goal.is-complete > .daily-goal-text { color: inherit; text-decoration: none; }
 .daily-goal.is-complete .daily-goal-text strong { color: var(--muted); text-decoration: line-through; }
 .daily-goal-edit { flex: 0 0 auto; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 3px; background: transparent; color: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; }
 .daily-goal-edit:hover, .daily-goal-edit:focus-visible { border-color: var(--orange); color: var(--accent-ink); }
@@ -2562,6 +2563,7 @@ html[data-theme="light"] .date-pill {
 .muscle-region:focus-visible path { stroke: var(--white); stroke-width: 2; }
 
 /* Cardápio */
+.meal-block-head span { white-space: nowrap; }
 .meal-time { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: .5px; }
 .food-swap { display: block; margin-top: 2px; color: var(--text-dim); font-size: 12px; }
 .plan-outdated { margin-bottom: 16px; }
