@@ -14,11 +14,13 @@
   const REST_DAY = 'rest'
   const DEFAULT_PLAN = Object.fromEntries(DAYS.map(([key]) => [key, REST_DAY]))
   const WEEKDAYS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado']
+  // Metas padrão. A pessoa pode editar título, descrição e valor; as edições ficam em state.goalSettings.
   const DAILY_GOALS = [
-    ['movement', 'Fazer o treino ou atividade planejada'],
-    ['nutrition', 'Registrar as refeições do dia'],
-    ['recovery', 'Reservar um tempo para recuperação'],
+    { id: 'movement', title: 'Treino ou atividade', description: 'Fazer o treino ou a atividade planejada para hoje.', target: 1, unit: 'sessão' },
+    { id: 'nutrition', title: 'Registro das refeições', description: 'Registrar as refeições do dia no FORJA.', target: 3, unit: 'refeições' },
+    { id: 'recovery', title: 'Recuperação', description: 'Reservar um tempo para descanso, alongamento ou relaxamento.', target: 15, unit: 'min' },
   ]
+  const THEME_KEY = 'forja-theme'
 
   let preferences = loadPreferences()
   let authMode = 'login'
@@ -31,6 +33,7 @@
   applyTheme()
   let muscleView = 'front'
   let selectedMuscle = 'peito'
+  let editingGoalId = ''
 
   function trackFirebaseEvent(eventName) {
     if (typeof window.forjaTrackAnalytics === 'function') {
@@ -47,7 +50,7 @@
       const stored = ForjaStorage.readJSON(PREFERENCES_KEY)
       const savedPlan = stored?.weekPlan || {}
       return {
-        avatar: typeof stored?.avatar === 'string' && stored.avatar.startsWith('data:image/jpegbase64,')
+        avatar: typeof stored?.avatar === 'string' && stored.avatar.startsWith('data:image/jpeg;base64,')
           ? stored.avatar
           : '',
         theme: stored?.theme === 'light' ? 'light' : 'dark',
@@ -64,6 +67,9 @@
 
   function applyTheme() {
     document.documentElement.dataset.theme = preferences.theme
+    // Guarda o último tema também fora do perfil, para o index.html aplicá-lo antes da primeira pintura.
+    try { localStorage.setItem(THEME_KEY, preferences.theme) } catch { /* armazenamento indisponível */ }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', preferences.theme === 'light' ? '#f2f3ef' : '#0b0b0b')
     const toggle = $('[data-theme-toggle]')
     if (toggle) {
       const light = preferences.theme === 'light'
@@ -98,16 +104,88 @@
     )
   }
 
+  function dailyGoalSettings() {
+    const saved = Array.isArray(state.goalSettings) ? state.goalSettings : []
+    return DAILY_GOALS.map((goal) => ({ ...goal, ...(saved.find((item) => item && item.id === goal.id) || {}) }))
+  }
+
   function dailyGoalsMarkup() {
     const completedGoals = state.dailyGoals[today()] || {}
-    const completedCount = DAILY_GOALS.filter(([id]) => completedGoals[id]).length
+    const goals = dailyGoalSettings()
+    const completedCount = goals.filter(({ id }) => completedGoals[id]).length
     return `<section class="panel daily-goals" aria-labelledby="daily-goals-title">
-      <div class="panel-head"><div><p class="eyebrow orange">PEQUENOS PASSOS</p><h3 id="daily-goals-title">Metas de hoje</h3></div><span class="tag">${completedCount}/${DAILY_GOALS.length} CONCLUÍDAS</span></div>
-      <div class="daily-goal-list">${DAILY_GOALS.map(([id, label]) => {
-        const completed = Boolean(completedGoals[id])
-        return `<button class="daily-goal ${completed ? 'is-complete' : ''}" type="button" role="checkbox" aria-checked="${completed}" data-daily-goal="${id}"><span class="daily-goal-check" aria-hidden="true">${completed ? '✓' : ''}</span><span>${label}</span></button>`
+      <div class="panel-head"><div><p class="eyebrow orange">PEQUENOS PASSOS</p><h3 id="daily-goals-title">Metas de hoje</h3></div><span class="tag">${completedCount}/${goals.length} CONCLUÍDAS</span></div>
+      <div class="daily-goal-list">${goals.map((goal) => {
+        const completed = Boolean(completedGoals[goal.id])
+        return `<div class="daily-goal-item">
+          <button class="daily-goal ${completed ? 'is-complete' : ''}" type="button" role="checkbox" aria-checked="${completed}" data-daily-goal="${goal.id}"><span class="daily-goal-check" aria-hidden="true">${completed ? '✓' : ''}</span><span class="daily-goal-text"><strong>${esc(goal.title)}</strong>${goal.description ? `<small>${esc(goal.description)}</small>` : ''}<em>Meta: ${esc(num(goal.target))} ${esc(goal.unit)}</em></span></button>
+          <button class="daily-goal-edit" type="button" data-edit-goal="${goal.id}" aria-label="Editar a meta ${esc(goal.title)}">Editar</button>
+        </div>`
       }).join('')}</div>
     </section>`
+  }
+
+  function openDailyGoalEditor(goalId) {
+    const goal = dailyGoalSettings().find((item) => item.id === goalId)
+    if (!goal) return
+    modalAction = 'edit-daily-goal'
+    editingGoalId = goalId
+    $('#modal-title').textContent = 'Editar meta'
+    $('#modal-form').innerHTML = `
+      <div class="field"><label for="f-goal-title">Título</label><input id="f-goal-title" name="title" type="text" minlength="3" maxlength="60" value="${esc(goal.title)}" required></div>
+      <div class="field"><label for="f-goal-description">Descrição (opcional)</label><textarea id="f-goal-description" name="description" maxlength="140" rows="3">${esc(goal.description || '')}</textarea></div>
+      <div class="goal-value-row">
+        <div class="field"><label for="f-goal-target">Valor da meta</label><input id="f-goal-target" name="target" type="number" min="0.1" max="10000" step="0.1" inputmode="decimal" value="${esc(goal.target)}" required></div>
+        <div class="field"><label for="f-goal-unit">Unidade</label><input id="f-goal-unit" name="unit" type="text" maxlength="20" value="${esc(goal.unit)}" placeholder="min, refeições, litros" required></div>
+      </div>
+      <p class="error" id="form-error" role="alert"></p>
+      <div class="actions"><button class="button" type="submit">Salvar meta</button><button class="button secondary" type="button" id="reset-daily-goal">Restaurar padrão</button></div>`
+    $('#modal-form').onsubmit = null
+    $('#reset-daily-goal').onclick = () => {
+      state.goalSettings = (Array.isArray(state.goalSettings) ? state.goalSettings : []).filter((item) => item && item.id !== goalId)
+      if (save()) {
+        $('#modal').close()
+        render()
+        toast('Meta restaurada para o padrão.')
+      }
+    }
+    $('#modal').showModal()
+    $('#f-goal-title').focus()
+  }
+
+  function validateDailyGoal(raw) {
+    const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ')
+    const title = clean(raw.title)
+    const description = clean(raw.description)
+    const unit = clean(raw.unit)
+    const target = Number(String(raw.target || '').replace(',', '.'))
+    if (title.length < 3) throw Error('O título precisa ter pelo menos 3 caracteres.')
+    if (title.length > 60) throw Error('O título pode ter no máximo 60 caracteres.')
+    if (description.length > 140) throw Error('A descrição pode ter no máximo 140 caracteres.')
+    if (!Number.isFinite(target) || target <= 0) throw Error('Informe um valor maior que zero.')
+    if (target > 10000) throw Error('Informe um valor de até 10.000.')
+    if (!unit) throw Error('Informe a unidade da meta, por exemplo: min, refeições ou litros.')
+    if (unit.length > 20) throw Error('A unidade pode ter no máximo 20 caracteres.')
+    return { title, description, target: Math.round(target * 10) / 10, unit }
+  }
+
+  function handleDailyGoalSubmit(event) {
+    if (event.target.id !== 'modal-form' || modalAction !== 'edit-daily-goal') return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    const formData = new FormData(event.target)
+    try {
+      const goal = validateDailyGoal(Object.fromEntries(formData))
+      const others = (Array.isArray(state.goalSettings) ? state.goalSettings : []).filter((item) => item && item.id !== editingGoalId)
+      state.goalSettings = [...others, { id: editingGoalId, ...goal }]
+      if (save()) {
+        $('#modal').close()
+        render()
+        toast('Meta atualizada.')
+      }
+    } catch (error) {
+      $('#form-error').textContent = error.message
+    }
   }
 
   function bmiCard() {
@@ -284,22 +362,89 @@
   }
 
   function muscleFigure(view) {
-    const body = `<circle class="body-base" cx="180" cy="46" r="25"/><path class="body-base" d="M163 76 Q180 69 197 76 L202 99 Q225 102 239 119 L229 232 Q216 254 202 263 L158 263 Q144 254 131 232 L121 119 Q135 102 158 99Z M124 111 Q109 110 103 128 L78 225 Q74 239 84 243 Q94 246 100 232 L135 151Z M236 111 Q251 110 257 128 L282 225 Q286 239 276 243 Q266 246 260 232 L225 151Z M158 254 Q180 264 202 254 L208 283 L152 283Z M153 278 Q138 290 139 313 L144 405 Q147 423 160 421 Q171 419 169 401 L174 319 L180 290 L186 319 L191 401 Q189 419 200 421 Q213 423 216 405 L221 313 Q222 290 207 278Z M145 411 Q137 426 139 449 L145 523 Q148 538 158 535 Q168 533 166 517 L166 452 L174 420Z M194 420 L202 452 L202 517 Q200 533 210 535 Q220 538 223 523 L229 449 Q231 426 215 411Z M145 531 L166 531 L166 550 Q158 559 139 556 Q133 554 138 546Z M202 531 L223 531 L230 546 Q235 554 229 556 Q210 559 202 550Z"/>`
-    const regions = view === 'front'
-      ? muscleRegion('ombros', ['M126 107 Q138 97 153 108 L150 130 Q139 142 126 130Z', 'M234 107 Q222 97 207 108 L210 130 Q221 142 234 130Z'])
-        + muscleRegion('peito', ['M151 119 Q164 111 178 119 L178 157 Q164 160 150 149Z', 'M182 119 Q196 111 210 119 L211 149 Q197 160 182 157Z'])
-        + muscleRegion('biceps', ['M105 137 Q112 124 124 130 L113 179 Q108 188 101 182Z', 'M255 137 Q248 124 236 130 L247 179 Q252 188 259 182Z'])
-        + muscleRegion('triceps', ['M89 183 Q95 182 101 188 L94 222 Q89 231 83 225Z', 'M271 183 Q265 182 259 188 L266 222 Q271 231 277 225Z'])
-        + muscleRegion('core', ['M158 163 Q180 168 202 163 L199 235 Q180 244 161 235Z'])
-        + muscleRegion('quadriceps', ['M147 292 Q160 287 174 297 L168 388 Q160 400 148 394Z', 'M186 297 Q200 287 213 292 L212 394 Q200 400 192 388Z'])
-        + muscleRegion('panturrilhas', ['M148 427 Q157 421 169 428 L163 510 Q156 520 148 510Z', 'M191 428 Q203 421 212 427 L212 510 Q204 520 197 510Z'])
-      : muscleRegion('ombros', ['M126 107 Q138 97 153 108 L150 130 Q139 142 126 130Z', 'M234 107 Q222 97 207 108 L210 130 Q221 142 234 130Z'])
-        + muscleRegion('triceps', ['M105 137 Q112 124 124 130 L113 179 Q108 188 101 182Z', 'M255 137 Q248 124 236 130 L247 179 Q252 188 259 182Z'])
-        + muscleRegion('costas', ['M151 116 Q165 107 178 115 L176 205 Q164 213 151 201Z', 'M182 115 Q195 107 209 116 L209 201 Q196 213 184 205Z', 'M160 205 Q180 212 200 205 L198 245 Q180 253 162 245Z'])
-        + muscleRegion('gluteos', ['M153 248 Q166 240 178 249 L177 280 Q165 287 151 275Z', 'M182 249 Q194 240 207 248 L209 275 Q195 287 183 280Z'])
-        + muscleRegion('posteriores', ['M147 292 Q160 287 174 297 L168 388 Q160 400 148 394Z', 'M186 297 Q200 287 213 292 L212 394 Q200 400 192 388Z'])
-        + muscleRegion('panturrilhas', ['M148 427 Q157 421 169 428 L163 510 Q156 520 148 510Z', 'M191 428 Q203 421 212 428 L212 510 Q204 520 197 510Z'])
-    return `<svg class="muscle-figure" viewBox="0 0 360 570" role="group" aria-label="Corpo humano interativo, vista ${view === 'front' ? 'frontal' : 'posterior'}">${body}${regions}</svg>`
+    const front = view === 'front'
+    const outline = BODY_OUTLINE.map((points) => [smoothPath(points), smoothPath(mirrorPoints(points))]).flat()
+    const body = '<ellipse class="body-base" cx="180" cy="46" rx="25" ry="31"/>'
+      + outline.map((d) => '<path class="body-base" d="' + d + '"/>').join('')
+      + (front ? BODY_DETAILS.front : BODY_DETAILS.back)
+    const regions = (front ? MUSCLE_SHAPES.front : MUSCLE_SHAPES.back)
+      .map(([group, shapes]) => muscleRegion(group, shapes.flatMap((points) => [smoothPath(points), smoothPath(mirrorPoints(points))])))
+      .join('')
+    return '<svg class="muscle-figure" viewBox="40 6 280 590" role="group" aria-label="Corpo humano interativo, vista ' + (front ? 'frontal' : 'posterior') + '">' + body + regions + '</svg>'
+  }
+
+  // Contorno e músculos são desenhados só do lado esquerdo e espelhados no eixo x = 180,
+  // o que garante simetria. Os pontos viram curvas suaves (Catmull-Rom convertida em Bézier).
+  function mirrorPoints(points) {
+    return points.map(([x, y]) => [360 - x, y])
+  }
+
+  function smoothPath(points) {
+    const n = points.length
+    const p = (i) => points[(i + n) % n]
+    const f = (value) => Math.round(value * 10) / 10
+    let d = 'M' + f(p(0)[0]) + ' ' + f(p(0)[1])
+    for (let i = 0; i < n; i++) {
+      const [x0, y0] = p(i - 1), [x1, y1] = p(i), [x2, y2] = p(i + 1), [x3, y3] = p(i + 2)
+      d += 'C' + f(x1 + (x2 - x0) / 6) + ' ' + f(y1 + (y2 - y0) / 6) + ' ' + f(x2 - (x3 - x1) / 6) + ' ' + f(y2 - (y3 - y1) / 6) + ' ' + f(x2) + ' ' + f(y2)
+    }
+    return d + 'Z'
+  }
+
+  const BODY_OUTLINE = [
+    // tronco e pescoço (metade esquerda, fechando no eixo central)
+    [[180, 70], [168, 74], [166, 94], [146, 102], [124, 110], [124, 128], [131, 152], [135, 190], [143, 230], [146, 256], [140, 280], [137, 300], [150, 322], [180, 334]],
+    // braço esquerdo
+    [[124, 108], [109, 116], [101, 134], [99, 160], [97, 190], [94, 236], [88, 264], [85, 292], [84, 318], [79, 336], [81, 356], [90, 366], [99, 360], [103, 340], [105, 320], [109, 292], [115, 262], [119, 238], [125, 206], [130, 172], [134, 146], [132, 122]],
+    // perna esquerda
+    [[139, 292], [133, 322], [133, 352], [137, 386], [145, 422], [146, 442], [142, 472], [144, 506], [150, 540], [147, 560], [139, 576], [145, 588], [166, 588], [170, 572], [168, 548], [172, 512], [176, 476], [174, 442], [176, 420], [178, 390], [179, 350], [177, 322]],
+  ]
+
+  const BODY_DETAILS = {
+    front: '<path class="body-line" d="M180 112 L180 292"/><path class="body-line" d="M150 99 Q165 108 178 106 M210 99 Q195 108 182 106"/>',
+    back: '<path class="body-line" d="M180 84 L180 290"/><path class="body-line" d="M152 300 Q166 316 180 312 Q194 316 208 300"/>',
+  }
+
+  const MUSCLE_SHAPES = {
+    front: [
+      ['ombros', [[[122, 110], [108, 119], [101, 138], [104, 158], [115, 150], [126, 135], [131, 118]]]],
+      ['peito', [[[177, 120], [160, 115], [141, 121], [131, 137], [135, 156], [151, 166], [170, 164], [177, 154]]]],
+      ['biceps', [[[107, 162], [104, 186], [106, 212], [113, 225], [120, 210], [124, 183], [118, 160]]]],
+      ['triceps', [[[101, 166], [98, 190], [98, 214], [102, 214], [101, 190], [104, 166]]]],
+      ['core', [
+        [[163, 175], [176, 173], [176, 197], [162, 198]],
+        [[161, 203], [176, 202], [176, 224], [161, 225]],
+        [[161, 230], [176, 229], [176, 251], [162, 252]],
+        [[163, 257], [176, 256], [177, 284], [168, 280]],
+        [[155, 180], [146, 198], [146, 236], [152, 252], [156, 230], [156, 200]],
+      ]],
+      ['quadriceps', [
+        [[146, 306], [139, 336], [141, 372], [150, 404], [160, 414], [166, 392], [168, 350], [162, 318]],
+        [[170, 360], [166, 392], [163, 414], [172, 412], [176, 392], [175, 366]],
+      ]],
+      ['panturrilhas', [
+        [[147, 446], [144, 476], [149, 510], [156, 508], [158, 478], [155, 448]],
+        [[166, 446], [172, 468], [170, 502], [163, 500], [161, 470]],
+      ]],
+    ],
+    back: [
+      ['ombros', [[[122, 110], [108, 119], [101, 138], [104, 158], [115, 150], [126, 135], [131, 118]]]],
+      ['triceps', [[[106, 160], [101, 184], [103, 212], [111, 226], [120, 210], [124, 182], [118, 158]]]],
+      ['costas', [
+        [[178, 84], [168, 96], [146, 104], [133, 113], [150, 122], [166, 140], [178, 156]],
+        [[148, 128], [136, 150], [139, 196], [150, 234], [166, 226], [175, 192], [168, 150]],
+        [[176, 236], [168, 244], [166, 266], [177, 276]],
+      ]],
+      ['gluteos', [[[177, 288], [158, 284], [142, 296], [139, 322], [151, 340], [170, 338], [178, 320]]]],
+      ['posteriores', [
+        [[143, 348], [140, 380], [147, 410], [157, 416], [160, 386], [156, 352]],
+        [[162, 350], [166, 384], [164, 414], [172, 410], [176, 380], [174, 350]],
+      ]],
+      ['panturrilhas', [
+        [[147, 434], [142, 466], [148, 498], [157, 494], [159, 464], [156, 436]],
+        [[163, 436], [173, 458], [171, 494], [162, 494], [160, 462]],
+      ]],
+    ],
   }
 
   function normalizedMuscleGroup(value) {
@@ -474,7 +619,7 @@
     </div>
     <section class="panel meal-alert-panel">
       <div class="panel-head"><div><p class="eyebrow orange">ACOMPANHAMENTO, SEM JULGAMENTO</p><h3>Meta calórica e dias de descanso</h3></div></div>
-      <p class="help">A referência soma a meta diária e a estimativa do treino. Veja se dias acima dela também ficaram sem treino registrado isso descreve os dados, sem indicar causa.</p>
+      <p class="help">A referência soma a meta diária e a estimativa do treino. Veja se dias acima dela também ficaram sem treino registrado. Isso descreve os dados, sem indicar causa.</p>
       ${mealAlerts()}
     </section>
     <div class="section-head"><div><p class="eyebrow">SEU CATÁLOGO</p><h2>Alimentos cadastrados</h2></div></div>
@@ -657,7 +802,7 @@
           <img src="img/nos.jpg" alt="Equipe da FORJA reunida em frente à academia" loading="lazy">
           <figcaption>Equipe FORJA</figcaption>
         </figure>
-        <p class="help about-disclaimer">A plataforma ajuda a acompanhar treino, alimentação e evolução ela não substitui orientação profissional.</p>
+        <p class="help about-disclaimer">A plataforma ajuda a acompanhar treino, alimentação e evolução, mas não substitui orientação profissional.</p>
       </section>`
   }
 
@@ -1088,6 +1233,12 @@
       return
     }
 
+    const editGoal = target.closest('[data-edit-goal]')
+    if (editGoal) {
+      openDailyGoalEditor(editGoal.dataset.editGoal)
+      return
+    }
+
     const dailyGoal = target.closest('[data-daily-goal]')
     if (dailyGoal) {
       const date = today()
@@ -1242,6 +1393,7 @@
   function install() {
     render = renderExperience
     document.addEventListener('submit', handleWeightAndTargetSubmit, true)
+    document.addEventListener('submit', handleDailyGoalSubmit, true)
     document.addEventListener('click', onResetAction, true)
     document.addEventListener('click', onDocumentClick)
     document.addEventListener('change', onDocumentChange)

@@ -213,7 +213,7 @@ function volume(x) { return x.type === 'cardio' ? x.distance : x.sets * x.reps *
 function expenditure(day) { return state.executions.filter(x => x.date === day).reduce((a, x) => a + x.minutes * (x.type === 'cardio' ? 7 : 4), 0) }
 function progress(id) { const xs = state.executions.filter(x => x.exerciseId === id).sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created); if (xs.length < 2) return { label: 'Sem comparação', delta: null }; const before = volume(xs[xs.length - 2]), after = volume(xs.at(-1)); if (!before) return { label: 'Sem comparação', delta: null }; const delta = (after - before) / before * 100; return { label: delta > 5 ? 'Evoluindo' : delta < -5 ? 'Regredindo' : 'Estável', delta } }
 function insight() { const ds = dates(14).filter(d => state.meals.some(m => m.date === d)); if (!ds.length) return 'Registre refeições e treinos para descobrir a relação entre sua alimentação e sua rotina. Dias sem alimentação registrada ficam fora da análise.'; if (!ds.some(d => state.executions.some(x => x.date === d))) return 'Já existem registros de alimentação. Registre também seus treinos nesse período para comparar os dias com e sem atividade.'; const over = ds.filter(d => nutrition(d).calories > state.profile.calories), rest = over.filter(d => !state.executions.some(x => x.date === d)); const withTrain = ds.filter(d => state.executions.some(x => x.date === d)), without = ds.filter(d => !withTrain.includes(d)); const pct = arr => arr.length ? `${Math.round(arr.filter(d => over.includes(d)).length / arr.length * 100)}%` : 'sem dados'; return `Nos últimos 14 dias, ${over.length} de ${ds.length} dias com alimentação registrada ultrapassaram a meta base. ${rest.length} desses dias não tiveram treino registrado. Excesso alimentar: ${pct(withTrain)} dos dias com treino e ${pct(without)} dos dias sem treino. Essa comparação descreve seus registros, sem indicar causa.` }
-function chart(series, labels, { goal = 0, unit = '' } = {}) { if (!series.length || !series.some(s => s.values.some(v => v !== null))) return '<div class="empty"><strong>Seu próximo registro começa este gráfico.</strong>Adicione dados para acompanhar a tendência.</div>'; const W = 620, H = 190, p = 30, all = series.flatMap(s => s.values).filter(v => v !== null), max = Math.max(...all, goal, 1) * 1.2, base = H - 30, x = i => p + i * (W - 2 * p) / Math.max(labels.length - 1, 1), y = v => base - v / max * (H - 55); let svg = `<svg class="chart" role="img" aria-label="Gráfico ${esc(unit)}" viewBox="0 0 ${W} ${H}">`; for (let i = 0; i < 4; i++) { const v = max * i / 3; svg += `<line x1="${p}" x2="${W - p}" y1="${y(v)}" y2="${y(v)}" stroke="#30302c"/><text x="${p}" y="${y(v) - 5}">${Math.round(v)}</text>` } if (goal) svg += `<line x1="${p}" x2="${W - p}" y1="${y(goal)}" y2="${y(goal)}" stroke="#aaa" stroke-dasharray="5 5"/>`; for (const s of series) { let path = '', open = false; s.values.forEach((v, i) => { if (v === null) { open = false; return } path += `${open ? 'L' : 'M'}${x(i)},${y(v)} `; open = true }); svg += `<path d="${path}" fill="none" stroke="${s.color || '#ff591f'}" stroke-width="2.5"/>`; s.values.forEach((v, i) => { if (v !== null) svg += `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="${s.color || '#ff591f'}"><title>${esc(labels[i])}: ${num(v)} ${esc(unit)}</title></circle>` }) } labels.forEach((d, i) => { if (labels.length < 9 || i % 2 === 0) svg += `<text text-anchor="middle" x="${x(i)}" y="${H - 7}">${esc(d)}</text>` }); return svg + '</svg>' }
+function chart(series, labels, { goal = 0, unit = '' } = {}) { if (!series.length || !series.some(s => s.values.some(v => v !== null))) return '<div class="empty"><strong>Seu próximo registro começa este gráfico.</strong>Adicione dados para acompanhar a tendência.</div>'; const W = 620, H = 190, p = 30, all = series.flatMap(s => s.values).filter(v => v !== null), max = Math.max(...all, goal, 1) * 1.2, base = H - 30, x = i => p + i * (W - 2 * p) / Math.max(labels.length - 1, 1), y = v => base - v / max * (H - 55); let svg = `<svg class="chart" role="img" aria-label="Gráfico ${esc(unit)}" viewBox="0 0 ${W} ${H}">`; for (let i = 0; i < 4; i++) { const v = max * i / 3; svg += `<line x1="${p}" x2="${W - p}" y1="${y(v)}" y2="${y(v)}" class="chart-grid"/><text x="${p}" y="${y(v) - 5}">${Math.round(v)}</text>` } if (goal) svg += `<line x1="${p}" x2="${W - p}" y1="${y(goal)}" y2="${y(goal)}" class="chart-goal" stroke-dasharray="5 5"/>`; for (const s of series) { let path = '', open = false; s.values.forEach((v, i) => { if (v === null) { open = false; return } path += `${open ? 'L' : 'M'}${x(i)},${y(v)} `; open = true }); svg += `<path d="${path}" fill="none" stroke="${s.color || '#ff591f'}" stroke-width="2.5"/>`; s.values.forEach((v, i) => { if (v !== null) svg += `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="${s.color || '#ff591f'}"><title>${esc(labels[i])}: ${num(v)} ${esc(unit)}</title></circle>` }) } labels.forEach((d, i) => { if (labels.length < 9 || i % 2 === 0) svg += `<text text-anchor="middle" x="${x(i)}" y="${H - 7}">${esc(d)}</text>` }); return svg + '</svg>' }
 const button = (label, action, cls = '') => `<button class="button ${cls}" data-action="${action}">${label}</button>`;
 const empty = t => `<div class="empty">${t}</div>`;
 const title = (eyebrow, t, desc, buttons = '') => `<div class="page-title"><div><p class="eyebrow orange">${eyebrow}</p><h1>${t}</h1><p>${desc}</p></div><div class="actions">${buttons}</div></div>`;
@@ -544,53 +544,153 @@ function escolherAlimentosPorGrupo(usuario, grupo, tipoRefeicao, diaTipo, indice
     .slice(0, 2)
     .map(food => ({ nome: food.nome, categoria: food.categoria }));
 }
-function montagemPorRefeicao(usuario, tipoRefeicao, diaTipo, idx) {
-  const objetivo = String(usuario.objetivo || 'geral').trim().toLowerCase();
-  const layouts = {
-    'Café da manhã': ['carboidrato', 'fruta', 'proteina'],
-    'Lanche da manhã': ['fruta', 'gordura'],
-    'Almoço': ['carboidrato', 'proteina', 'vegetal'],
-    'Lanche da tarde': ['fruta', 'gordura'],
-    'Jantar': ['carboidrato', 'proteina', 'vegetal'],
-    'Ceia': ['proteina', 'fruta'],
-    Lanche: ['fruta', 'gordura']
-  };
-  const grupos = layouts[tipoRefeicao] || ['carboidrato', 'proteina'];
-  const alimentos = [];
-  grupos.forEach((grupo, index) => {
-    const opcoes = escolherAlimentosPorGrupo(usuario, grupo, tipoRefeicao, diaTipo, idx + index);
-    if (opcoes.length) {
-      const item = opcoes[0];
-      if (!alimentos.some(alimento => normalizeName(alimento.nome) === normalizeName(item.nome))) alimentos.push(item);
-    }
-  });
-  if (!alimentos.length) {
-    const fallback = filtroAlimentos(usuario).slice(0, 2).map(food => ({ nome: food.nome, categoria: food.categoria }));
-    alimentos.push(...fallback);
-  }
-  if (objetivo === 'hipertrofia' && tipoRefeicao === 'Almoço') {
-    const feijao = filtroAlimentos(usuario).find(food => normalizeName(food.nome) === 'feijao');
-    if (feijao && !alimentos.some(food => normalizeName(food.nome) === 'feijao')) alimentos.push({ nome: feijao.nome, categoria: feijao.categoria });
-  }
-  return alimentos.slice(0, 5);
+// Cardápio coerente por refeição: cada horário tem modelos próprios (café, lanche, almoço, jantar e ceia).
+// Os alimentos de cada papel saem só da lista adequada àquele horário, giram ao longo da semana
+// e respeitam gostos, aversões, alergias e restrições do perfil (via filtroAlimentos).
+const MEAL_TIMES = { 'Café da manhã': '07:00', 'Lanche da manhã': '10:00', 'Almoço': '12:30', Lanche: '16:00', 'Lanche da tarde': '16:00', 'Jantar': '19:30', 'Ceia': '21:30' };
+const MEAL_SLOT = { 'Café da manhã': 'cafe', 'Lanche da manhã': 'lanche', Lanche: 'lanche', 'Lanche da tarde': 'lanche', 'Almoço': 'almoco', 'Jantar': 'jantar', 'Ceia': 'ceia' };
+const MEAL_ROLES = {
+  cafeCarbo: ['Pão integral', 'Tapioca', 'Aveia'],
+  cafeProteina: ['Ovos', 'Queijo', 'Iogurte natural', 'Pasta de amendoim'],
+  cafeFruta: ['Mamão', 'Banana', 'Morango', 'Laranja', 'Manga', 'Abacaxi', 'Maçã'],
+  lancheFruta: ['Maçã', 'Banana', 'Laranja', 'Morango', 'Manga', 'Abacaxi', 'Mamão'],
+  lancheGordura: ['Castanhas', 'Amendoim', 'Pasta de amendoim', 'Sementes de chia'],
+  principalCarbo: ['Arroz branco', 'Batata doce', 'Arroz integral', 'Mandioca', 'Macarrão', 'Batata inglesa', 'Cuscuz'],
+  leguminosa: ['Feijão', 'Lentilha', 'Grão-de-bico'],
+  principalProteina: ['Frango grelhado', 'Carne bovina', 'Peixe', 'Ovos', 'Atum', 'Tofu'],
+  folhas: ['Salada', 'Alface', 'Tomate', 'Rúcula'],
+  legumes: ['Brócolis', 'Cenoura', 'Abobrinha', 'Couve-flor', 'Espinafre', 'Couve'],
+  ceiaProteina: ['Iogurte natural', 'Queijo'],
+};
+const MEAL_TEMPLATES = {
+  cafe: [
+    { roles: ['Pão integral', 'cafeProteina', 'cafeFruta'], nota: 'Café com carboidrato, uma fonte de proteína e fruta.' },
+    { roles: ['Iogurte natural', 'Aveia', 'cafeFruta', 'Sementes de chia'], nota: 'Bowl de iogurte com aveia, fruta e chia.' },
+    { roles: ['Tapioca', 'cafeProteina', 'cafeFruta'], nota: 'Tapioca recheada com proteína e uma fruta.' },
+    { roles: ['Aveia', 'Leite', 'Banana', 'Pasta de amendoim'], nota: 'Mingau de aveia com banana e pasta de amendoim.' },
+  ],
+  lanche: [
+    { roles: ['lancheFruta', 'lancheGordura'], nota: 'Fruta com uma porção pequena de oleaginosas.' },
+    { roles: ['Iogurte natural', 'lancheFruta'], nota: 'Iogurte com fruta.' },
+    { roles: ['Pão integral', 'Pasta de amendoim'], nota: 'Pão integral com pasta de amendoim.' },
+    { roles: ['lancheFruta', 'Aveia', 'Sementes de chia'], nota: 'Fruta picada com aveia e chia.' },
+  ],
+  ceia: [
+    { roles: ['ceiaProteina', 'Morango'], nota: 'Ceia leve com proteína e fruta.' },
+    { roles: ['lancheFruta', 'Castanhas'], nota: 'Ceia leve com fruta e poucas castanhas.' },
+    { roles: ['Iogurte natural', 'Mamão'], nota: 'Ceia leve com iogurte e mamão.' },
+  ],
+};
+const MEAL_UNITS = { ovos: [50, 'unidade', 'unidades'], 'pao integral': [30, 'fatia', 'fatias'], banana: [100, 'unidade', 'unidades'], maca: [130, 'unidade', 'unidades'], laranja: [130, 'unidade', 'unidades'] };
+const SCALABLE_GROUPS = ['carboidrato', 'proteina', 'leguminosa'];
+
+function alimentosDisponiveis(usuario) {
+  const disponiveis = filtroAlimentos(usuario);
+  const porNome = new Map(disponiveis.map(food => [normalizeName(food.nome), food]));
+  const gosta = new Set(toList(usuario.gosta).map(normalizeName));
+  return { porNome, gosta };
 }
-function variarRefeicoes(plano) {
-  const copia = JSON.parse(JSON.stringify(plano));
-  copia.forEach((dia, diaIndex) => {
-    dia.refeicoes.forEach((refeicao, index) => {
-      if (index === 0) return;
-      const nomes = refeicao.alimentos.map(item => normalizeName(item.nome));
-      const anterior = copia[diaIndex].refeicoes[index - 1]?.alimentos || [];
-      const anteriorNomes = new Set(anterior.map(item => normalizeName(item.nome)));
-      refeicao.alimentos = refeicao.alimentos.filter(item => !anteriorNomes.has(normalizeName(item.nome)) || (refeicao.alimentos.length > 1 && Math.random() > 0.5));
-      if (!refeicao.alimentos.length) {
-        const pool = filtroAlimentos({ ...state.profile, ...copia[diaIndex].usuario || {} });
-        const fallback = pool.slice(0, 2).map(food => ({ nome: food.nome, categoria: food.categoria }));
-        refeicao.alimentos = fallback;
-      }
+function candidatosDoPapel(papel, contexto) {
+  const nomes = MEAL_ROLES[papel] || [papel];
+  const lista = nomes.map(nome => contexto.porNome.get(normalizeName(nome))).filter(Boolean);
+  // Alimentos marcados como "gosto" aparecem com mais frequência, sem eliminar a variedade.
+  return [...lista.filter(food => contexto.gosta.has(normalizeName(food.nome))), ...lista];
+}
+function escolherDoPapel(papel, contexto, indice, usados) {
+  const candidatos = candidatosDoPapel(papel, contexto);
+  for (let passo = 0; passo < candidatos.length; passo++) {
+    const food = candidatos[(indice + passo) % candidatos.length];
+    if (!usados.has(normalizeName(food.nome))) return { food, alternativas: candidatos.filter(item => item !== food && !usados.has(normalizeName(item.nome))) };
+  }
+  return null;
+}
+function itemDoCardapio(food, alternativas) {
+  const vistas = new Set([normalizeName(food.nome)]);
+  const substituicoes = [];
+  for (const item of alternativas) {
+    const key = normalizeName(item.nome);
+    if (!vistas.has(key)) { vistas.add(key); substituicoes.push(item.nome); }
+    if (substituicoes.length === 2) break;
+  }
+  return { nome: food.nome, categoria: food.categoria, substituicoes };
+}
+function montarPorModelo(slot, contexto, dia) {
+  const modelos = MEAL_TEMPLATES[slot];
+  for (let tentativa = 0; tentativa < modelos.length; tentativa++) {
+    const modelo = modelos[(dia + (slot === 'lanche' ? contexto.lancheOffset : 0) + tentativa) % modelos.length];
+    const usados = new Set();
+    const alimentos = [];
+    modelo.roles.forEach((papel, posicao) => {
+      const escolha = escolherDoPapel(papel, contexto, dia * 3 + posicao + (slot === 'lanche' ? contexto.lancheOffset : 0), usados);
+      if (!escolha) return;
+      usados.add(normalizeName(escolha.food.nome));
+      alimentos.push(itemDoCardapio(escolha.food, escolha.alternativas));
     });
+    if (alimentos.length >= Math.min(2, modelo.roles.length)) return { alimentos, nota: modelo.nota };
+  }
+  return { alimentos: [], nota: '' };
+}
+function montarRefeicaoPrincipal(slot, contexto, dia) {
+  const usados = new Set();
+  const alimentos = [];
+  const adicionar = (papel, indice) => {
+    const escolha = escolherDoPapel(papel, contexto, indice, usados);
+    if (!escolha) return null;
+    usados.add(normalizeName(escolha.food.nome));
+    alimentos.push(itemDoCardapio(escolha.food, escolha.alternativas));
+    return escolha.food;
+  };
+  const almoco = slot === 'almoco';
+  // Almoço e jantar usam deslocamentos diferentes para não repetir a mesma proteína e o mesmo carboidrato no dia.
+  const carbo = adicionar('principalCarbo', almoco ? dia : dia + 3);
+  const semCarne = !candidatosDoPapel('principalProteina', contexto).some(food => food.vegetariano === false);
+  const temMacarrao = carbo && normalizeName(carbo.nome) === 'macarrao';
+  if ((almoco || semCarne) && !temMacarrao) adicionar('leguminosa', almoco ? dia : dia + 1);
+  adicionar('principalProteina', almoco ? dia * 2 : dia * 2 + 1);
+  adicionar('folhas', almoco ? dia : dia + 2);
+  adicionar('legumes', almoco ? dia : dia + 3);
+  if (almoco) adicionar('Azeite', 0);
+  const nota = almoco
+    ? 'Prato principal: carboidrato, leguminosa, proteína e vegetais. Azeite em pequena quantidade.'
+    : 'Jantar com a mesma base do almoço, trocando proteína, carboidrato e vegetais.';
+  return { alimentos, nota };
+}
+function porcaoAjustada(nome, fator, categoria) {
+  const meta = getFoodMacroMeta(nome);
+  const base = meta.portion || 150;
+  const grupo = FOOD_LIBRARY.find(food => normalizeName(food.nome) === normalizeName(nome))?.grupos || [categoria];
+  if (!grupo.some(item => SCALABLE_GROUPS.includes(item))) return base;
+  const unidade = MEAL_UNITS[normalizeName(nome)];
+  if (unidade) return Math.max(unidade[0], Math.round(base * fator / unidade[0]) * unidade[0]);
+  return Math.max(10, Math.round(base * fator / 10) * 10);
+}
+function descreverPorcao(alimento) {
+  const gramas = alimento.porcao || getFoodMacroMeta(alimento.nome).portion || 150;
+  const unidade = MEAL_UNITS[normalizeName(alimento.nome)];
+  if (!unidade) return gramas + ' g';
+  const quantidade = Math.max(1, Math.round(gramas / unidade[0]));
+  return gramas + ' g · ' + quantidade + ' ' + (quantidade === 1 ? unidade[1] : unidade[2]);
+}
+function snapshotDoCardapio(alimento) {
+  const snapshot = getMealFoodSnapshot(alimento.nome);
+  if (!alimento.porcao || alimento.porcao === snapshot.portion) return snapshot;
+  const proporcao = alimento.porcao / snapshot.portion;
+  return { ...snapshot, portion: alimento.porcao, calories: snapshot.calories * proporcao, protein: snapshot.protein * proporcao, carbs: snapshot.carbs * proporcao, fat: snapshot.fat * proporcao };
+}
+function montagemPorRefeicao(usuario, tipoRefeicao, diaTipo, dia, contexto = { ...alimentosDisponiveis(usuario), lancheOffset: 0 }) {
+  const slot = MEAL_SLOT[tipoRefeicao] || 'lanche';
+  const resultado = slot === 'almoco' || slot === 'jantar' ? montarRefeicaoPrincipal(slot, contexto, dia) : montarPorModelo(slot, contexto, dia);
+  let nota = resultado.nota;
+  if (diaTipo === 'Treino' && (tipoRefeicao === 'Lanche da tarde' || tipoRefeicao === 'Lanche')) nota += ' Em dia de treino, pode ser feito 1 a 2 horas antes da atividade.';
+  return { alimentos: resultado.alimentos, observacao: nota || 'Sugestão equilibrada.' };
+}
+function ajustarPorcoes(plano, metaCalorias) {
+  return plano.map(dia => {
+    const base = dia.refeicoes.reduce((total, refeicao) => total + refeicao.alimentos.reduce((soma, item) => soma + getMealFoodSnapshot(item.nome).calories, 0), 0);
+    // O ajuste usa a meta informada no perfil, limitado entre 80% e 125% das porções médias para evitar extremos.
+    const fator = metaCalorias > 0 && base > 0 ? Math.min(1.25, Math.max(0.8, metaCalorias / base)) : 1;
+    return { ...dia, refeicoes: dia.refeicoes.map(refeicao => ({ ...refeicao, alimentos: refeicao.alimentos.map(item => ({ ...item, porcao: porcaoAjustada(item.nome, fator, item.categoria) })) })) };
   });
-  return copia;
 }
 function validarPlanoAlimentar(plano, usuario) {
   const alertas = [];
@@ -618,8 +718,14 @@ function validarPlanoAlimentar(plano, usuario) {
         problemas.push(`${dia.dia} — ${refeicao.nome} sem alimentos.`);
         return;
       }
+      const slot = MEAL_SLOT[refeicao.nome];
+      const horariosAceitos = slot === 'ceia' ? ['lanche', 'cafe'] : [slot];
       refeicao.alimentos.forEach((alimento) => {
         const nome = normalizeName(alimento.nome);
+        const referencia = FOOD_LIBRARY.find(food => normalizeName(food.nome) === nome);
+        if (slot && referencia && !referencia.refeicoesIndicadas.includes('todos') && !referencia.refeicoesIndicadas.some(item => horariosAceitos.includes(item))) {
+          problemas.push(`${dia.dia} — ${alimento.nome} não é indicado para ${refeicao.nome.toLowerCase()}.`);
+        }
         if (dislikes.some(item => nome.includes(item))) {
           problemas.push(`${dia.dia} — ${refeicao.nome} inclui alimento marcado como não gostado.`);
           sugestoes.push(`Substituir ${alimento.nome} por ${buscarSubstituicoes(alimento.nome)[0] || 'alternativa similar'}.`);
@@ -650,20 +756,21 @@ function gerarPlanoAlimentar(usuario, treino = null) {
   const refeicoesPorDia = Math.min(6, Math.max(3, Number(user.refeicoesPorDia) || 4));
   const layout = MEAL_LAYOUTS[refeicoesPorDia] || MEAL_LAYOUTS[4];
   const treinoSemana = Array.isArray(treino?.semana) ? treino.semana : [];
+  const disponiveis = alimentosDisponiveis(user);
   const plano = dias.map((dia, index) => {
     const diaTreino = treinoSemana[index];
     const tipo = diaTreino && diaTreino.treino !== 'Recuperação' ? 'Treino' : 'Descanso';
-    const refeicoes = layout.map((nome) => ({
-      nome,
-      alimentos: montagemPorRefeicao(user, nome, tipo, index),
-      observacao: tipo === 'Treino'
-        ? 'Sugestão equilibrada para o dia de treino.'
-        : 'Sugestão equilibrada para o dia de descanso.'
-    }));
+    let lanches = 0;
+    const refeicoes = layout.map((nome) => {
+      // Dois lanches no mesmo dia começam em modelos diferentes.
+      const lancheOffset = MEAL_SLOT[nome] === 'lanche' ? 2 * lanches++ : 0;
+      const montagem = montagemPorRefeicao(user, nome, tipo, index, { ...disponiveis, lancheOffset });
+      return { nome, horario: MEAL_TIMES[nome] || '', alimentos: montagem.alimentos, observacao: montagem.observacao };
+    });
     return { dia, tipo, refeicoes };
   });
 
-  const variação = variarRefeicoes(plano);
+  const variação = ajustarPorcoes(plano, Number(user.calories) || 0);
   const validacao = validarPlanoAlimentar(variação, user);
   const observacoes = [
     'Este plano apresenta sugestões de organização alimentar e não substitui acompanhamento profissional.',
@@ -679,6 +786,7 @@ function gerarPlanoAlimentar(usuario, treino = null) {
   }
 
   return {
+    versao: 2,
     usuario: {
       idade: Number(user.age) || 0,
       peso: Number(user.weight) || 0,
@@ -708,7 +816,7 @@ function renderNutritionPlan(plan) {
   const formatDaySummary = (dia) => {
     const totals = dia.refeicoes.reduce((sum, refeicao) => {
       refeicao.alimentos.forEach((alimento) => {
-        const snapshot = getMealFoodSnapshot(alimento.nome);
+        const snapshot = snapshotDoCardapio(alimento);
         sum.kcal += snapshot.calories;
         sum.protein += snapshot.protein;
         sum.carbs += snapshot.carbs;
@@ -728,6 +836,7 @@ function renderNutritionPlan(plan) {
 
   return `<section class="panel nutrition-plan">
     <div class="panel-head"><div><p class="eyebrow orange">ORGANIZAÇÃO ALIMENTAR</p><h3>Planejamento semanal sugerido</h3></div></div>
+    ${plan.versao === 2 ? '' : '<p class="notice plan-outdated">Este cardápio foi criado pela versão anterior do gerador. Gere uma nova sugestão para ver as refeições organizadas por horário, com porções e trocas.</p>'}
     <div class="meal-plan-grid">${plan.plano.map((dia) => `
       <article class="meal-day">
         <div class="meal-day-header">
@@ -741,15 +850,16 @@ function renderNutritionPlan(plan) {
         ${dia.refeicoes.map((refeicao) => `
           <div class="meal-block">
             <div class="meal-block-head">
-              <h4>${esc(refeicao.nome)}</h4>
-              <span>${num(refeicao.alimentos.reduce((sum, item) => sum + getMealFoodSnapshot(item.nome).calories, 0))} kcal</span>
+              <h4>${esc(refeicao.nome)}${refeicao.horario ? ` <small class="meal-time">${esc(refeicao.horario)}</small>` : ''}</h4>
+              <span>${num(refeicao.alimentos.reduce((sum, item) => sum + snapshotDoCardapio(item).calories, 0))} kcal</span>
             </div>
             <ul class="meal-list">${refeicao.alimentos.map((alimento) => {
-              const snapshot = getMealFoodSnapshot(alimento.nome);
+              const snapshot = snapshotDoCardapio(alimento);
               return `<li class="food-row">
                 <div>
                   <strong>${esc(alimento.nome)}</strong>
-                  <small>Porção média · ${num(snapshot.portion)} g</small>
+                  <small>Porção · ${esc(descreverPorcao(alimento))}</small>
+                  ${alimento.substituicoes?.length ? `<small class="food-swap">Troca: ${alimento.substituicoes.map(item => esc(item)).join(' ou ')}</small>` : ''}
                 </div>
                 <div class="food-macros">
                   <span>${num(snapshot.calories)} kcal</span>
