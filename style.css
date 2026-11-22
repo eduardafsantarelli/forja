@@ -6,6 +6,7 @@
     --line: #2a2a28;
     --white: #f5f3ed;
     --text: var(--white);
+    --accent-ink: #ff5c6b;
     --text-soft: #c4c4be;
     --text-dim: #a8a8a4;
     --surface-2: #1b1b1a;
@@ -159,7 +160,7 @@ nav a.active:after {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    color: var(--orange)
+    color: var(--accent-ink)
 }
 
 main {
@@ -178,7 +179,7 @@ main {
 }
 
 .orange {
-    color: var(--orange)
+    color: var(--accent-ink)
 }
 
 h1,
@@ -271,7 +272,7 @@ small {
 .button {
     border: 1px solid var(--orange);
     background: var(--orange);
-    color: #121210;
+    color: #ffffff;
     padding: 13px 23px;
     font-size: 14px;
     font-weight: 700;
@@ -284,7 +285,7 @@ small {
 }
 
 .button:hover {
-    background: #f04452;
+    background: #c81e2f;
     transform: translateY(-2px)
 }
 
@@ -405,7 +406,7 @@ small {
 }
 
 .tag {
-    color: var(--orange);
+    color: var(--accent-ink);
     font-size: 11px;
     border: 1px solid #e5243655;
     padding: 5px 8px;
@@ -502,7 +503,7 @@ small {
     border: 1px solid var(--line-strong);
     display: grid;
     place-items: center;
-    color: var(--orange);
+    color: var(--accent-ink);
     margin-right: 12px;
     flex-shrink: 0
 }
@@ -530,7 +531,7 @@ small {
 }
 
 .insight .eyebrow {
-    color: var(--orange)
+    color: var(--accent-ink)
 }
 
 .chart {
@@ -609,7 +610,7 @@ small {
 
 .meal-day-header span {
     font-size: 12px;
-    color: var(--orange);
+    color: var(--accent-ink);
     text-transform: uppercase;
     letter-spacing: .08em
 }
@@ -742,7 +743,7 @@ small {
     font-size: 14px;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: var(--orange)
+    color: var(--accent-ink)
 }
 
 .hydration-box p {
@@ -916,7 +917,7 @@ fieldset {
 
 .notice button {
     background: none;
-    color: var(--orange);
+    color: var(--accent-ink);
     border: 0;
     text-decoration: underline;
     font: inherit
@@ -1526,7 +1527,7 @@ header {
     border: 2px solid var(--line);
     overflow: hidden;
     background: var(--surface-3);
-    color: var(--orange);
+    color: var(--accent-ink);
     font-size: 40px;
     font-weight: 700;
 }
@@ -1645,7 +1646,7 @@ header {
 }
 
 .training-profile-reminder a {
-    color: var(--orange);
+    color: var(--accent-ink);
     font-weight: 700;
     text-decoration: underline;
     flex: 0 0 auto;
@@ -1851,7 +1852,7 @@ header {
 }
 
 .about-values article > span {
-    color: var(--orange);
+    color: var(--accent-ink);
     font-size: 13px;
     font-weight: 700;
 }
@@ -2008,6 +2009,7 @@ html[data-theme="light"] {
     --muted: #62665f;
     --line: #d6d9d2;
     --white: #20231f;
+    --accent-ink: #c01c2c;
     --text-soft: #3d413b;
     --text-dim: #555a53;
     --surface-2: #f7f8f5;
@@ -2362,7 +2364,7 @@ html[data-theme="light"] .date-pill {
 }
 
 .muscle-exercise-number {
-    color: var(--orange);
+    color: var(--accent-ink);
 }
 
 .muscle-exercise-info {
@@ -2547,7 +2549,7 @@ html[data-theme="light"] .date-pill {
 .daily-goal-text em { color: var(--muted); font-size: 12px; font-style: normal; letter-spacing: .3px; }
 .daily-goal.is-complete .daily-goal-text strong { color: var(--muted); text-decoration: line-through; }
 .daily-goal-edit { flex: 0 0 auto; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 3px; background: transparent; color: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; }
-.daily-goal-edit:hover, .daily-goal-edit:focus-visible { border-color: var(--orange); color: var(--orange); }
+.daily-goal-edit:hover, .daily-goal-edit:focus-visible { border-color: var(--orange); color: var(--accent-ink); }
 .goal-value-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 #modal-form textarea { width: 100%; resize: vertical; font: inherit; }
 

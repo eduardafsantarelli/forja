@@ -598,9 +598,15 @@ function candidatosDoPapel(papel, contexto) {
 }
 function escolherDoPapel(papel, contexto, indice, usados) {
   const candidatos = candidatosDoPapel(papel, contexto);
-  for (let passo = 0; passo < candidatos.length; passo++) {
-    const food = candidatos[(indice + passo) % candidatos.length];
-    if (!usados.has(normalizeName(food.nome))) return { food, alternativas: candidatos.filter(item => item !== food && !usados.has(normalizeName(item.nome))) };
+  const usadosNoDia = contexto.usadosNoDia || new Set();
+  // Primeiro tenta um alimento que ainda não apareceu no dia; só repete se não houver outra opção.
+  for (const evitarRepeticao of [true, false]) {
+    for (let passo = 0; passo < candidatos.length; passo++) {
+      const food = candidatos[(indice + passo) % candidatos.length];
+      const key = normalizeName(food.nome);
+      if (usados.has(key) || (evitarRepeticao && usadosNoDia.has(key))) continue;
+      return { food, alternativas: candidatos.filter(item => item !== food && !usados.has(normalizeName(item.nome))) };
+    }
   }
   return null;
 }
@@ -616,6 +622,8 @@ function itemDoCardapio(food, alternativas) {
 }
 function montarPorModelo(slot, contexto, dia) {
   const modelos = MEAL_TEMPLATES[slot];
+  const usadosNoDia = contexto.usadosNoDia || new Set();
+  let melhor = null;
   for (let tentativa = 0; tentativa < modelos.length; tentativa++) {
     const modelo = modelos[(dia + (slot === 'lanche' ? contexto.lancheOffset : 0) + tentativa) % modelos.length];
     const usados = new Set();
@@ -626,9 +634,15 @@ function montarPorModelo(slot, contexto, dia) {
       usados.add(normalizeName(escolha.food.nome));
       alimentos.push(itemDoCardapio(escolha.food, escolha.alternativas));
     });
-    if (alimentos.length >= Math.min(2, modelo.roles.length)) return { alimentos, nota: modelo.nota };
+    if (alimentos.length < Math.min(2, modelo.roles.length)) continue;
+    // Prefere o modelo que menos repete alimentos já usados em outras refeições do mesmo dia.
+    const repeticoes = alimentos.filter(item => usadosNoDia.has(normalizeName(item.nome))).length;
+    if (!melhor || repeticoes < melhor.repeticoes) melhor = { alimentos, nota: modelo.nota, repeticoes };
+    if (repeticoes === 0) break;
   }
-  return { alimentos: [], nota: '' };
+  if (!melhor) return { alimentos: [], nota: '' };
+  melhor.alimentos.forEach(item => usadosNoDia.add(normalizeName(item.nome)));
+  return { alimentos: melhor.alimentos, nota: melhor.nota };
 }
 function montarRefeicaoPrincipal(slot, contexto, dia) {
   const usados = new Set();
@@ -650,6 +664,7 @@ function montarRefeicaoPrincipal(slot, contexto, dia) {
   adicionar('folhas', almoco ? dia : dia + 2);
   adicionar('legumes', almoco ? dia : dia + 3);
   if (almoco) adicionar('Azeite', 0);
+  alimentos.forEach(item => contexto.usadosNoDia?.add(normalizeName(item.nome)));
   const nota = almoco
     ? 'Prato principal: carboidrato, leguminosa, proteína e vegetais. Azeite em pequena quantidade.'
     : 'Jantar com a mesma base do almoço, trocando proteína, carboidrato e vegetais.';
@@ -677,7 +692,7 @@ function snapshotDoCardapio(alimento) {
   const proporcao = alimento.porcao / snapshot.portion;
   return { ...snapshot, portion: alimento.porcao, calories: snapshot.calories * proporcao, protein: snapshot.protein * proporcao, carbs: snapshot.carbs * proporcao, fat: snapshot.fat * proporcao };
 }
-function montagemPorRefeicao(usuario, tipoRefeicao, diaTipo, dia, contexto = { ...alimentosDisponiveis(usuario), lancheOffset: 0 }) {
+function montagemPorRefeicao(usuario, tipoRefeicao, diaTipo, dia, contexto = { ...alimentosDisponiveis(usuario), lancheOffset: 0, usadosNoDia: new Set() }) {
   const slot = MEAL_SLOT[tipoRefeicao] || 'lanche';
   const resultado = slot === 'almoco' || slot === 'jantar' ? montarRefeicaoPrincipal(slot, contexto, dia) : montarPorModelo(slot, contexto, dia);
   let nota = resultado.nota;
@@ -761,10 +776,11 @@ function gerarPlanoAlimentar(usuario, treino = null) {
     const diaTreino = treinoSemana[index];
     const tipo = diaTreino && diaTreino.treino !== 'Recuperação' ? 'Treino' : 'Descanso';
     let lanches = 0;
+    const usadosNoDia = new Set();
     const refeicoes = layout.map((nome) => {
       // Dois lanches no mesmo dia começam em modelos diferentes.
       const lancheOffset = MEAL_SLOT[nome] === 'lanche' ? 2 * lanches++ : 0;
-      const montagem = montagemPorRefeicao(user, nome, tipo, index, { ...disponiveis, lancheOffset });
+      const montagem = montagemPorRefeicao(user, nome, tipo, index, { ...disponiveis, lancheOffset, usadosNoDia });
       return { nome, horario: MEAL_TIMES[nome] || '', alimentos: montagem.alimentos, observacao: montagem.observacao };
     });
     return { dia, tipo, refeicoes };
