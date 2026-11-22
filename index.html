@@ -23,11 +23,18 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
   <link rel="preload" as="image" href="assets/strength.webp">
-  <link rel="stylesheet" href="style.css">
-  <script defer src="storage.js?v=firebase-auth-v5"></script>
-  <script defer src="app.js?v=firebase-auth-v5"></script>
-  <script defer src="experience.js?v=firebase-auth-v5"></script>
-  <script type="module" src="firebase.js?v=firebase-auth-v5"></script>
+  <script>
+    // Aplica o último tema escolhido antes da primeira pintura, evitando o "piscar" do modo escuro.
+    try {
+      const savedTheme = localStorage.getItem('forja-theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme
+    } catch { /* armazenamento indisponível */ }
+  </script>
+  <link rel="stylesheet" href="style.css?v=melhorias-v6">
+  <script defer src="storage.js?v=melhorias-v6"></script>
+  <script defer src="app.js?v=melhorias-v6"></script>
+  <script defer src="experience.js?v=melhorias-v6"></script>
+  <script type="module" src="firebase.js?v=melhorias-v6"></script>
 </head>
 
 <body>
