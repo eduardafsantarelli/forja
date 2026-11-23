@@ -6,16 +6,19 @@ Aplicação web para acompanhar **treinos, alimentação e evolução de peso** 
 
 - **Conta de usuário** com Firebase Authentication: cadastro, login e recuperação de senha por e-mail
 - **Perfil** com peso, altura, idade, nível de atividade, objetivo e preferências de treino
-- **Dashboard** com IMC calculado e sua classificação, além de checklist de metas diárias
-- **Treinos:** cadastro de exercícios e rotinas, ou sugestão semanal gerada pelo app
-- **Alimentação:** cadastro de alimentos (valores por 100 g) e registro de refeições com a quantidade consumida
+- **Dashboard** com IMC calculado e sua classificação, além de metas diárias editáveis (título, descrição e valor)
+- **Treinos:** mapa muscular interativo, cadastro de exercícios e rotinas, histórico de treinos e sugestão semanal gerada pelo app
+- **Alimentação:** cadastro de alimentos (valores por 100 g, com preenchimento automático para alimentos comuns), registro de refeições e cardápio semanal por horário com porções e trocas
 - **Evolução:** histórico de peso e comparação semanal entre treino e variação de peso
 - **Tema claro e escuro**, com a preferência salva no navegador
 - **Dados de demonstração** (com confirmação antes de substituir os registros atuais) para explorar o app rapidamente
+- **Backup e privacidade:** exportar os registros em JSON e apagar os dados da conta em **Meu perfil**
+- **Sincronização entre aparelhos** pelo Cloud Firestore, quando ativado no projeto
+- Pode ser **instalado no celular** (manifesto e ícones)
 
 ## Tecnologias
 
-HTML5 · CSS3 · JavaScript · Firebase Authentication · Firebase Analytics · localStorage · Netlify
+HTML5 · CSS3 · JavaScript · Firebase Authentication · Cloud Firestore · Firebase Analytics · localStorage · Netlify
 
 ## Como executar
 
@@ -35,14 +38,16 @@ Depois abra `http://localhost:8000` e crie uma conta no primeiro acesso.
 2. Substitua os valores de `firebaseConfig` em `firebase.js` pelos do seu projeto
 3. Em **Authentication > Sign-in method**, habilite **E-mail/senha**
 4. Em **Authentication > Settings > Authorized domains**, adicione o domínio onde o app será publicado
+5. Para sincronizar entre aparelhos, crie o banco em **Firestore Database** e publique as regras do arquivo `firestore.rules` (aba **Regras**). Sem o banco, o app continua funcionando só com os dados do navegador
 
 > A configuração web do Firebase não é uma senha: ela é feita para ficar no navegador. A proteção vem das regras do Firebase e da restrição da chave aos domínios do projeto no Google Cloud Console.
 
 ## Como os dados funcionam
 
 - O **login** é validado pelo Firebase e funciona em qualquer navegador
-- **Perfil, treinos, refeições e preferências** ficam no `localStorage` do navegador, separados pelo ID de cada usuário, e não são sincronizados entre dispositivos
-- Em **Meu perfil > Apagar dados**, você limpa os registros da conta atual neste dispositivo
+- **Perfil, treinos, refeições e preferências** ficam no `localStorage` do navegador, separados pelo ID de cada usuário
+- Com o Firestore ativo, uma cópia de cada conta fica em `usuarios/{uid}` e vale a versão alterada por último. As regras permitem que cada pessoa leia e grave apenas o próprio documento
+- Em **Meu perfil > Backup e privacidade**, você exporta os registros ou apaga os dados da conta
 
 ## Cálculos usados
 
@@ -58,15 +63,16 @@ Os insights descrevem os registros e não substituem orientação profissional.
 forja/
 ├── index.html      # estrutura da página e janelas de login
 ├── style.css       # estilos, temas claro/escuro e responsividade
-├── app.js          # lógica de treino, nutrição, evolução e perfil
-├── experience.js   # interações e animações da interface
+├── app.js          # dados, cálculos e geradores de treino e cardápio
+├── experience.js   # telas, interações e sincronização da interface
 ├── storage.js      # persistência local separada por usuário
-├── firebase.js     # autenticação e Analytics
+├── firebase.js     # autenticação, sincronização (Firestore) e Analytics
+├── firestore.rules # regras de acesso do banco
+├── manifest.webmanifest # instalação no celular
 ├── netlify.toml    # publicação e cabeçalhos de segurança
-├── assets/         # imagem de destaque
-└── img/            # imagens usadas no app
+└── img/            # imagens (WebP) e ícones
 ```
 
 ## Créditos
 
-Foto de treino em `assets/strength.webp`: [Strength Per Second](https://strengthpersecond.com/).
+Foto de treino: [Strength Per Second](https://strengthpersecond.com/).

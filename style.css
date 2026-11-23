@@ -231,7 +231,7 @@ small {
     width: 100%;
     height: 100%;
     filter: grayscale(1);
-    background-image: url('./img/4fdfa1fa-971a-411b-b70f-495f5549bfa0.jpg');
+    background-image: url('./img/hero-forja.webp');
     background-size: cover;
     background-position: center 42%;
     background-repeat: no-repeat;
@@ -2572,3 +2572,8 @@ html[data-theme="light"] .date-pill {
   .goal-value-row { grid-template-columns: 1fr; }
   .daily-goal-edit { padding: 6px 10px; }
 }
+
+/* Backup e privacidade (Meu perfil) */
+.data-controls { margin-top: 24px; }
+.data-controls .actions { flex-wrap: wrap; }
+#training-history .row { gap: 12px; }
