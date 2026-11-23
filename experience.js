@@ -1479,6 +1479,7 @@
       const remoteStamp = Number(remote?.updatedAt) || 0
       const remoteState = remote ? JSON.parse(remote.appData || 'null') : null
       if (remoteState?.profile && remoteStamp > localUpdatedAt(userId)) {
+        const wasIncomplete = !profileIsComplete()
         applyingRemote = true
         ForjaStorage.writeJSON(KEY, remoteState)
         const remotePreferences = JSON.parse(remote.preferences || 'null')
@@ -1491,6 +1492,8 @@
         syncReady = true
         setSyncStatus('synced')
         applyTheme()
+        // Em um aparelho novo a pessoa cai no cadastro inicial; com os dados recebidos, volta ao início.
+        if (wasIncomplete && profileIsComplete() && location.hash === '#perfil') location.hash = '#inicio'
         render()
         toast('Seus dados foram sincronizados com a sua conta.')
         return
@@ -1511,6 +1514,9 @@
 
   function install() {
     ForjaStorage.subscribe(onStorageWrite)
+    window.addEventListener('online', () => {
+      if (activeUid && syncReady && syncStatus === 'offline') pushToCloud()
+    })
     render = renderExperience
     document.addEventListener('submit', handleWeightAndTargetSubmit, true)
     document.addEventListener('submit', handleDailyGoalSubmit, true)
