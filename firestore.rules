@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Regras do Firestore do FORJA: cada pessoa só lê e grava o próprio documento.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['appData', 'preferences', 'updatedAt'])
+        && request.resource.data.appData is string
+        && request.resource.data.preferences is string
+        && request.resource.data.updatedAt is number;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

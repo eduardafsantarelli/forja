@@ -37,12 +37,31 @@
     }
   }
 
+  // Quem precisa saber de gravações (ex.: sincronização com a nuvem) se inscreve aqui.
+  const listeners = new Set();
+
+  function subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }
+
   function writeJSON(key, value) {
+    let saved = false;
     try {
-      return write(key, JSON.stringify(value));
+      saved = write(key, JSON.stringify(value));
     } catch {
       return false;
     }
+    if (saved) {
+      listeners.forEach((listener) => {
+        try {
+          listener(key);
+        } catch {
+          /* um ouvinte com erro não impede a gravação */
+        }
+      });
+    }
+    return saved;
   }
 
   function remove(key) {
@@ -99,6 +118,7 @@
     writeSession,
     removeSession,
     resetForjaDataOnce,
+    subscribe,
   });
 
   resetForjaDataOnce();

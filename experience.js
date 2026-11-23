@@ -21,6 +21,7 @@
     { id: 'recovery', title: 'Recuperação', description: 'Reservar um tempo para descanso, alongamento ou relaxamento.', target: 15, unit: 'min' },
   ]
   const THEME_KEY = 'forja-theme'
+  const LEVEL_LABELS = { iniciante: 'iniciante', intermediario: 'intermediário', avancado: 'avançado' }
 
   let preferences = loadPreferences()
   let authMode = 'login'
@@ -219,6 +220,8 @@
     if (activeUid === userId) return
 
     activeUid = userId
+    syncReady = false
+    setSyncStatus('local')
     window.forjaSetUserScope(userId)
     PREFERENCES_KEY = userId
       ? `${ForjaStorage.keys.preferences}:${userId}`
@@ -232,6 +235,7 @@
     }
 
     applyTheme()
+    if (userId) pullFromCloud(userId)
   }
 
   function updateAccountButton() {
@@ -291,7 +295,7 @@
       <div class="hero-content">
         <p class="eyebrow orange">UM PASSO DE CADA VEZ</p>
         <h1>SEU TREINO.<br>SUA ROTINA.<br><span class="orange">SEU RITMO.</span></h1>
-        <p>Bem-vindo${name}. Acompanhe seus treinos, refeições e evolução em um só lugar.</p>
+        <p>Boas-vindas${name}. Acompanhe seus treinos, refeições e evolução em um só lugar.</p>
       </div>
     </section>
     <div class="section-head">
@@ -309,46 +313,34 @@
   }
 
   function renderTraining() {
-    let generatorMarkup = training().replace(
-      'Use os dados do perfil para montar uma rotina baseada em nível, objetivo, disponibilidade e fase do atleta, sem prescrever cargas perigosas.',
-      'A sugestão usa seu nível, objetivo e dias disponíveis. Revise os exercícios antes de começar e peça orientação ao profissional da academia se tiver dúvidas.',
-    ).replace(
-      '<button class="button secondary" data-action="generate-plan">Gerar treino inteligente</button>',
-      '',
-    ).replace(
-      '<div class="actions"><button class="button" data-action="generate-plan">Gerar treino</button></div>',
-      `<div class="actions"><button class="button" type="button" data-action="generate-plan">Gerar plano de treino</button>${state.generatedPlan ? '<button class="button secondary" type="button" data-action="clear-smart-plan">Apagar plano de treino</button>' : ''}</div>`,
-    )
-    generatorMarkup = generatorMarkup.replace(
-      /<section class="panel scroll-reveal"><div class="panel-head"><h3>Volume de força<\/h3>[\s\S]*?<\/section>/,
-      '',
-    )
-    const exerciseCatalog = `<section class="panel exercise-catalog" id="training-exercises" aria-labelledby="exercise-catalog-title">
-      <div class="panel-head"><div><p class="eyebrow orange">SUA BIBLIOTECA</p><h3 id="exercise-catalog-title">Exercícios</h3></div><div class="actions"><span class="tag">${state.exercises.length} ${state.exercises.length === 1 ? 'EXERCÍCIO' : 'EXERCÍCIOS'}</span><button class="button secondary small" type="button" data-action="exercise">+ Exercício</button></div></div>
-      <div class="exercise-list">${state.exercises.map((exercise) => `<article class="exercise-entry">
-        <div><strong>${esc(exercise.name)}</strong><small>${esc(exercise.group)} · ${exercise.type === 'cardio' ? 'Cardio' : 'Força'}</small></div>
-        <button class="delete" data-remove="exercises:${exercise.id}">Excluir</button>
-      </article>`).join('') || empty('Ainda não há exercícios cadastrados. Use “+ Exercício” para adicionar o primeiro.')}</div>
-    </section>`
-    generatorMarkup = generatorMarkup
-      .replace(
-        '<div class="section-head"><h2>Seus treinos</h2></div>',
-        '<div class="section-head" id="training-routines"><div><p class="eyebrow orange">SUA ROTINA</p><h2>Treinos montados por você</h2></div><button class="button small" type="button" data-action="workout">+ Treino</button></div>',
-      )
-      .replace(
-        '<section class="panel generator-panel">',
-        `${muscleExplorer()}${weekPlan()}<section class="panel generator-panel">`,
-      )
-      .replace(
-        '<div class="columns"><section class="panel scroll-reveal"><div class="panel-head"><h3>Volume de força</h3>',
-        `${exerciseCatalog}<div class="columns"><section class="panel scroll-reveal"><div class="panel-head"><h3>Volume de força</h3>`,
-      )
+    const plan = state.generatedPlan
     const profileIsIncomplete = !state.profile.name || !Number(state.profile.age) || !Number(state.profile.height) || !Number(state.profile.daysAvailable)
     const profileReminder = profileIsIncomplete
       ? `<section class="notice training-profile-reminder"><span>Para gerar o treino, complete no perfil seu nome, idade, altura e dias disponíveis por semana.</span><a href="#perfil">Completar perfil</a></section>`
       : ''
-
-    return profileReminder + `<div class="training-page">${generatorMarkup}</div>`
+    const generator = `<section class="panel generator-panel">
+      <div class="panel-head"><h3>Gerador inteligente de treinos</h3><span class="tag">SEMANAL</span></div>
+      <p class="help">A sugestão usa seu nível, objetivo e dias disponíveis. Revise os exercícios antes de começar e peça orientação ao profissional da academia se tiver dúvidas.</p>
+      <div class="actions"><button class="button" type="button" data-action="generate-plan">Gerar plano de treino</button>${plan ? '<button class="button secondary" type="button" data-action="clear-smart-plan">Apagar plano de treino</button>' : ''}</div>
+      ${plan ? `<div class="alert-warning">${esc(plan.aviso || 'Atenção às recomendações de recuperação e à avaliação profissional se houver restrições.')}</div>` : ''}
+    </section>${plan ? renderPlan(plan) : ''}`
+    const routines = `<div class="section-head" id="training-routines"><div><p class="eyebrow orange">SUA ROTINA</p><h2>Treinos montados por você</h2></div><button class="button small" type="button" data-action="workout">+ Treino</button></div>
+      <div class="catalog">${state.workouts.map((workout) => `<article class="panel"><p class="eyebrow orange">ROTINA DE TREINO</p><h3>${esc(workout.name)}</h3><p>${workout.exerciseIds.map((id) => esc(state.exercises.find((exercise) => exercise.id === id)?.name || 'Exercício arquivado')).join(' · ')}</p><div class="actions"><button class="button small" type="button" data-action="execution">Registrar</button><button class="delete" type="button" data-remove="workouts:${workout.id}">Excluir treino</button></div></article>`).join('') || empty('Seu primeiro treino começa com o cadastro de exercícios.')}</div>`
+    const exerciseCatalog = `<section class="panel exercise-catalog" id="training-exercises" aria-labelledby="exercise-catalog-title">
+      <div class="panel-head"><div><p class="eyebrow orange">SUA BIBLIOTECA</p><h3 id="exercise-catalog-title">Exercícios</h3></div><div class="actions"><span class="tag">${state.exercises.length} ${state.exercises.length === 1 ? 'EXERCÍCIO' : 'EXERCÍCIOS'}</span><button class="button secondary small" type="button" data-action="exercise">+ Exercício</button></div></div>
+      <div class="exercise-list">${state.exercises.map((exercise) => `<article class="exercise-entry">
+        <div><strong>${esc(exercise.name)}</strong><small>${esc(exercise.group)} · ${exercise.type === 'cardio' ? 'Cardio' : 'Força'}</small></div>
+        <button class="delete" type="button" data-remove="exercises:${exercise.id}">Excluir</button>
+      </article>`).join('') || empty('Ainda não há exercícios cadastrados. Use “+ Exercício” para adicionar o primeiro.')}</div>
+    </section>`
+    const progression = `<section class="panel"><div class="panel-head"><h3>Progressão por exercício</h3></div>${state.exercises.map((exercise) => {
+      const result = progress(exercise.id)
+      return `<div class="row"><div><strong>${esc(exercise.name)}</strong><small>${esc(exercise.group)} · ${exercise.type === 'cardio' ? 'Cardio: distância em km' : 'Força: volume em kg·rep'}</small></div><div class="row-value orange">${result.label}${result.delta !== null ? `<small>${result.delta > 0 ? '+' : ''}${num(result.delta)}%</small>` : ''}</div></div>`
+    }).join('') || empty('Cadastre seus exercícios para acompanhar a progressão.')}<p class="help">Última execução versus anterior: acima de +5% = evoluindo; abaixo de −5% = regredindo. Cardio compara distância; considere também duração e esforço.</p></section>`
+    const executions = state.executions.slice().sort((first, second) => second.date.localeCompare(first.date) || second.created - first.created)
+    const history = `<section class="panel" id="training-history"><div class="panel-head"><h3>Histórico de treinos</h3><span class="tag">${executions.length} ${executions.length === 1 ? 'REGISTRO' : 'REGISTROS'}</span></div>${executions.slice(0, 20).map((entry) => `<div class="row"><div><strong>${esc(entry.name)}</strong><small>${fmtDate(entry.date)} · ${entry.type === 'strength' ? `${entry.sets} × ${entry.reps} · ${num(entry.load)} kg` : `${num(entry.distance)} km · ${num(entry.minutes)} min`}</small></div><button class="delete" type="button" data-remove="executions:${entry.id}">Excluir</button></div>`).join('') || empty('Registre um treino para começar seu histórico.')}${executions.length > 20 ? '<p class="help">Mostrando os 20 registros mais recentes.</p>' : ''}</section>`
+    const header = title('CADA REPETIÇÃO CONTA', 'TREINE COM DIREÇÃO.', 'Organize sua rotina. Registre o esforço. Veja a progressão e gere uma sugestão semanal com base no seu perfil.', button('Registrar treino', 'execution'))
+    return profileReminder + `<div class="training-page">${header}${muscleExplorer()}${weekPlan()}${generator}${routines}${exerciseCatalog}<div class="columns">${progression}${history}</div></div>`
   }
 
   const MUSCLE_LABELS = {
@@ -494,7 +486,7 @@
         </section>
         <section class="muscle-exercise-panel" aria-labelledby="muscle-exercises-title" aria-live="polite">
           <div class="muscle-exercise-heading"><div><p class="eyebrow orange">MÚSCULO SELECIONADO</p><h3 id="muscle-exercises-title">Exercícios para ${MUSCLE_LABELS[selectedMuscle]}</h3></div><span class="tag">${exercises.length} MOVIMENTOS</span></div>
-          <div class="muscle-exercise-list">${exercises.map((exercise, index) => `<article class="muscle-exercise-row"><span class="muscle-exercise-number">${String(index + 1).padStart(2, '0')}</span><div class="muscle-exercise-info"><strong>${esc(exercise.name)}</strong><small>${esc(exercise.equipment || (exercise.type === 'cardio' ? 'Cardio' : 'Força'))}${exercise.level ? ` · ${esc(exercise.level)}` : ''}</small></div><button class="button secondary small" type="button" data-muscle-exercise="${esc(exercise.name)}">Ver execução</button></article>`).join('') || '<p class="muscle-empty">Ainda não há exercícios ligados a esta região.</p>'}</div>
+          <div class="muscle-exercise-list">${exercises.map((exercise, index) => `<article class="muscle-exercise-row"><span class="muscle-exercise-number">${String(index + 1).padStart(2, '0')}</span><div class="muscle-exercise-info"><strong>${esc(exercise.name)}</strong><small>${esc(exercise.equipment || (exercise.type === 'cardio' ? 'Cardio' : 'Força'))}${exercise.level ? ` · ${esc(LEVEL_LABELS[exercise.level] || exercise.level)}` : ''}</small></div><button class="button secondary small" type="button" data-muscle-exercise="${esc(exercise.name)}">Ver execução</button></article>`).join('') || '<p class="muscle-empty">Ainda não há exercícios ligados a esta região.</p>'}</div>
           <p class="muscle-catalog-note">Catálogo de movimentos e exercícios cadastrados na sua conta.</p>
         </section>
       </div>
@@ -511,7 +503,7 @@
     const detail = document.querySelector('[data-muscle-detail]')
     const content = detail?.querySelector('[data-muscle-detail-content]')
     if (!detail || !content) return
-    content.innerHTML = `<h2 id="muscle-detail-title">${esc(name)}</h2><p class="muscle-detail-meta">${esc(group)} · ${type}${curated?.equipamento ? ` · ${esc(curated.equipamento)}` : ''}</p><div class="muscle-detail-instructions"><p class="eyebrow">EXECUÇÃO</p><p>${esc(instructions)}</p></div>${curated?.video ? `<div class="muscle-video"><video controls playsinline src="${esc(curated.video)}" aria-label="Demonstração de ${esc(name)}"></video></div>` : '<p class="muscle-video-unavailable">Demonstração em vídeo indisponível para este exercício.</p>'}`
+    content.innerHTML = `<h2 id="muscle-detail-title">${esc(name)}</h2><p class="muscle-detail-meta">${esc(group)} · ${type}${curated?.equipamento ? ` · ${esc(curated.equipamento)}` : ''}</p><div class="muscle-detail-instructions"><p class="eyebrow">EXECUÇÃO</p><p>${esc(instructions)}</p></div>${curated?.video ? `<div class="muscle-video"><video controls playsinline src="${esc(curated.video)}" aria-label="Demonstração de ${esc(name)}"></video></div>` : ''}`
     detail.showModal()
   }
 
@@ -668,7 +660,7 @@
 
     return `<section class="panel weekly-report">
       <div class="panel-head"><div><p class="eyebrow orange">ÚLTIMAS 8 SEMANAS</p><h3>Treino e variação de peso</h3></div></div>
-      <p class="help">Volume considera exercícios de força (séries × repetições × carga). A variação compara a primeira e a última pesagem registrada na mesma semana coincidência não significa causa.</p>
+      <p class="help">Volume considera exercícios de força (séries × repetições × carga). A variação compara a primeira e a última pesagem registrada na mesma semana. Coincidência não significa causa.</p>
       <div class="table-scroll"><table><thead><tr><th scope="col">Semana</th><th scope="col">Sessões de força</th><th scope="col">Volume</th><th scope="col">Variação de peso</th></tr></thead>
         <tbody>${weeks.map((week) => `<tr>
           <th scope="row">${fmtDate(dateKey(week.start))} – ${fmtDate(dateKey(week.end))}</th>
@@ -684,7 +676,7 @@
     return title(
       'ACOMPANHE SEU PROGRESSO',
       'EVOLUÇÃO COM CONTEXTO.',
-      'Registre o peso com regularidade tendências são mais úteis que um valor isolado.',
+      'Registre o peso com regularidade: tendências são mais úteis que um valor isolado.',
       button('+ Registrar peso', 'weight'),
     ) + `<div class="columns">
       <section class="panel"><div class="panel-head"><h3>Peso corporal</h3><span class="tag">KG</span></div>${weightChart()}</section>
@@ -735,7 +727,7 @@
           ${field('name', 'Como podemos chamar você?', 'text', profile.name, 'maxlength="60" autocomplete="name"')}
           <div class="form-grid">
             ${field('weight', 'Peso atual (kg)', 'number', profile.weight || '', 'min="20" max="500" step="any"')}
-            ${field('target', 'Meta de peso (kg)', 'number', profile.target || '', positive)}
+            ${field('target', 'Meta de peso (kg)', 'number', profile.target || '', 'min="20" max="500" step="any"')}
           </div>
           <div class="form-grid">
             ${field('age', 'Idade', 'number', profile.age || '', 'min="1" max="120" step="1"')}
@@ -745,7 +737,7 @@
             ${selectField('activityLevel', 'Nível de atividade', `<option value="" ${profile.activityLevel ? '' : 'selected'} disabled>Selecione</option><option value="sedentario" ${profile.activityLevel === 'sedentario' ? 'selected' : ''}>Sedentário</option><option value="leve" ${profile.activityLevel === 'leve' ? 'selected' : ''}>Leve</option><option value="moderado" ${profile.activityLevel === 'moderado' ? 'selected' : ''}>Moderado</option><option value="intenso" ${profile.activityLevel === 'intenso' ? 'selected' : ''}>Intenso</option>`)}
             <div class="bmi-preview" aria-live="polite"><span class="label">IMC ATUAL</span><strong>${bmi ? `${bmi.value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} · ${bmi.classification}` : 'Calculado ao salvar peso e altura'}</strong></div>
           </div>
-          ${field('calories', 'Meta diária de calorias (kcal)', 'number', profile.calories, positive)}
+          ${field('calories', 'Meta diária de calorias (kcal)', 'number', profile.calories, 'min="1000" max="6000" step="1"')}
           <p class="help">Use a meta indicada para você. O site não calcula nem recomenda metas de saúde.</p>
           <fieldset class="training-preferences">
             <legend>Para personalizar o treino sugerido</legend>
@@ -781,6 +773,7 @@
           <p class="error" id="profile-error" role="alert"></p>
           <button class="button" type="submit">${onboarding ? 'Salvar perfil e continuar' : 'Salvar meu perfil'}</button>
         </form>
+        ${onboarding ? '' : dataControlsMarkup()}
       </section>
       `
   }
@@ -799,7 +792,7 @@
       <section class="team-photo-section" aria-labelledby="team-photo-title">
         <div class="section-head"><div><p class="eyebrow">QUEM FAZ A FORJA</p><h2 id="team-photo-title">Nossa equipe</h2></div></div>
         <figure class="team-photo">
-          <img src="img/nos.jpg" alt="Equipe da FORJA reunida em frente à academia" loading="lazy">
+          <img src="img/equipe-forja.webp" alt="Equipe da FORJA reunida em frente à academia" width="1200" height="900" loading="lazy" decoding="async">
           <figcaption>Equipe FORJA</figcaption>
         </figure>
         <p class="help about-disclaimer">A plataforma ajuda a acompanhar treino, alimentação e evolução, mas não substitui orientação profissional.</p>
@@ -888,7 +881,7 @@
     modalAction = 'update-weight-target'
     $('#modal-title').textContent = 'Meta de peso alcançada'
     $('#modal-form').innerHTML = `<p class="goal-reached-message" role="status">Você registrou ${num(currentWeight)} kg e atingiu sua meta de ${num(reachedTarget)} kg. Quer definir uma nova meta?</p>
-      ${field('newTarget', 'Nova meta de peso (kg)', 'number', '', positive)}
+      ${field('newTarget', 'Nova meta de peso (kg)', 'number', '', 'min="20" max="500" step="any"')}
       <p class="help">Você também pode manter a meta atual e alterá-la depois no Perfil.</p>
       <p class="error" id="form-error" role="alert"></p>
       <div class="actions"><button class="button" type="submit">Salvar nova meta</button><button class="button secondary" type="button" id="defer-weight-target">Manter meta atual</button></div>`
@@ -913,6 +906,7 @@
     try {
       if (modalAction === 'update-weight-target') {
         const newTarget = readNum(formData, 'newTarget')
+        if (newTarget < 20 || newTarget > 500) throw Error('Informe uma meta de peso entre 20 e 500 kg.')
         if (newTarget === Number(state.profile.target)) throw Error('Informe uma meta diferente da que você acabou de atingir.')
         state.profile.target = newTarget
         state.profile.goalPromptedFor = ''
@@ -926,6 +920,7 @@
       }
 
       const weight = readNum(formData, 'weight')
+      if (weight < 20 || weight > 500) throw Error('Informe um peso entre 20 e 500 kg.')
       const date = readDate(formData)
       const previousWeight = state.weights
         .filter((entry) => entry.date < date)
@@ -1006,6 +1001,9 @@
         }
         if (!profile.name) throw Error('Informe seu nome.')
         if (profile.weight < 20 || profile.weight > 500) throw Error('Informe um peso entre 20 e 500 kg.')
+        if (profile.target < 20 || profile.target > 500) throw Error('Informe uma meta de peso entre 20 e 500 kg.')
+        // Limites amplos só para barrar valores impossíveis ou extremos; a meta continua sendo escolha da pessoa.
+        if (profile.calories < 1000 || profile.calories > 6000) throw Error('Informe uma meta diária entre 1.000 e 6.000 kcal. Para valores fora disso, procure orientação profissional.')
         if (profile.age <= 0) throw Error('Informe uma idade válida.')
         if (profile.age > 120) throw Error('Informe uma idade válida (até 120 anos).')
         if (profile.height < 80 || profile.height > 250) throw Error('Informe uma altura entre 80 e 250 cm.')
@@ -1111,7 +1109,8 @@
     submit.disabled = true
 
     try {
-      if (password.length < 8) throw Error('Use uma senha com pelo menos 8 caracteres.')
+      if (!password) throw Error('Informe sua senha.')
+      if (authMode === 'register' && password.length < 8) throw Error('Use uma senha com pelo menos 8 caracteres.')
       const api = await window.forjaAuthReady
       if (!api) throw Error(authErrorMessage(window.forjaAuthError || {}))
 
@@ -1173,6 +1172,7 @@
       const api = await window.forjaAuthReady
       if (!api) throw window.forjaAuthError || Error('Firebase indisponível.')
       await api.sendPasswordResetEmail(api.auth, email)
+      errorElement.textContent = ''
       toast('Se a conta existir, você receberá um e-mail para redefinir a senha.')
     } catch (error) {
       errorElement.textContent = authErrorMessage(error)
@@ -1304,7 +1304,7 @@
 
     event.preventDefault()
     event.stopImmediatePropagation()
-    if (!confirm('Apagar seu perfil, registros e preferências deste dispositivo? Sua conta Firebase não será excluída. Essa ação não pode ser desfeita.')) return
+    if (!confirm('Apagar seu perfil, registros e preferências desta conta, neste aparelho e na cópia sincronizada? Sua conta de acesso não será excluída. Exporte uma cópia antes se quiser guardar os dados. Essa ação não pode ser desfeita.')) return
 
     state = fresh()
     state.dailyGoals = {}
@@ -1390,7 +1390,127 @@
     }
   }
 
+  // ---------- Seus dados: backup, demonstração e sincronização ----------
+  // Os dados continuam salvos no navegador (localStorage). Quando o Firestore está ativo no projeto,
+  // uma cópia de cada conta é guardada em usuarios/{uid}; vale a versão alterada por último.
+  const SYNC_META_PREFIX = 'forja-sync-meta'
+  const SYNC_TEXT = {
+    local: 'Sincronização indisponível: seus dados ficam salvos só neste aparelho.',
+    syncing: 'Sincronizando com a sua conta…',
+    synced: 'Sincronizado com a sua conta. Seus dados aparecem em qualquer aparelho em que você entrar.',
+    offline: 'Não foi possível sincronizar agora. Seus dados continuam salvos neste aparelho.',
+  }
+  let syncStatus = 'local'
+  let syncTimer = null
+  let syncReady = false
+  let pendingLocalChange = false
+  let applyingRemote = false
+
+  function dataControlsMarkup() {
+    return `<section class="panel data-controls" aria-labelledby="data-controls-title">
+      <div class="panel-head"><div><p class="eyebrow orange">SEUS DADOS, SEU CONTROLE</p><h3 id="data-controls-title">Backup e privacidade</h3></div></div>
+      <p class="help" id="sync-status" role="status">${SYNC_TEXT[syncStatus]}</p>
+      <div class="actions">
+        <button class="button secondary small" type="button" data-action="export">Exportar registros</button>
+        <button class="button secondary small" type="button" data-action="demo">Carregar demonstração</button>
+        <button class="button secondary small" type="button" data-action="reset">Apagar dados</button>
+      </div>
+    </section>`
+  }
+
+  function setSyncStatus(status) {
+    syncStatus = status
+    const element = $('#sync-status')
+    if (element) element.textContent = SYNC_TEXT[status]
+  }
+
+  const syncMetaKey = (userId) => `${SYNC_META_PREFIX}:${userId}`
+  const localUpdatedAt = (userId) => Number(ForjaStorage.readJSON(syncMetaKey(userId))?.updatedAt) || 0
+
+  async function cloudApi() {
+    const api = await window.forjaAuthReady
+    return api?.cloud || null
+  }
+
+  function withTimeout(promise, ms = 8000) {
+    return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(Error('timeout')), ms))])
+  }
+
+  function onStorageWrite(key) {
+    if (applyingRemote || !activeUid || (key !== KEY && key !== PREFERENCES_KEY)) return
+    if (!syncReady) {
+      pendingLocalChange = true
+      return
+    }
+    ForjaStorage.writeJSON(syncMetaKey(activeUid), { updatedAt: Date.now() })
+    clearTimeout(syncTimer)
+    syncTimer = setTimeout(pushToCloud, 1500)
+  }
+
+  async function pushToCloud() {
+    const userId = activeUid
+    const cloud = await cloudApi()
+    if (!userId || !cloud) return setSyncStatus('local')
+    setSyncStatus('syncing')
+    try {
+      await withTimeout(cloud.save(userId, {
+        appData: JSON.stringify(state),
+        preferences: JSON.stringify(preferences),
+        updatedAt: localUpdatedAt(userId) || Date.now(),
+      }))
+      if (userId === activeUid) setSyncStatus('synced')
+    } catch {
+      if (userId === activeUid) setSyncStatus('offline')
+    }
+  }
+
+  async function pullFromCloud(userId) {
+    syncReady = false
+    pendingLocalChange = false
+    const cloud = await cloudApi()
+    if (!cloud) {
+      syncReady = true
+      return setSyncStatus('local')
+    }
+    setSyncStatus('syncing')
+    try {
+      const remote = await withTimeout(cloud.load(userId))
+      if (userId !== activeUid) return
+      const remoteStamp = Number(remote?.updatedAt) || 0
+      const remoteState = remote ? JSON.parse(remote.appData || 'null') : null
+      if (remoteState?.profile && remoteStamp > localUpdatedAt(userId)) {
+        applyingRemote = true
+        ForjaStorage.writeJSON(KEY, remoteState)
+        const remotePreferences = JSON.parse(remote.preferences || 'null')
+        if (remotePreferences) ForjaStorage.writeJSON(PREFERENCES_KEY, remotePreferences)
+        ForjaStorage.writeJSON(syncMetaKey(userId), { updatedAt: remoteStamp })
+        window.forjaSetUserScope(userId)
+        preferences = loadPreferences()
+        state.dailyGoals = state.dailyGoals || {}
+        applyingRemote = false
+        syncReady = true
+        setSyncStatus('synced')
+        applyTheme()
+        render()
+        toast('Seus dados foram sincronizados com a sua conta.')
+        return
+      }
+      syncReady = true
+      if (pendingLocalChange || localUpdatedAt(userId) > remoteStamp || (!remote && profileIsComplete())) {
+        if (!localUpdatedAt(userId)) ForjaStorage.writeJSON(syncMetaKey(userId), { updatedAt: Date.now() })
+        await pushToCloud()
+      } else {
+        setSyncStatus('synced')
+      }
+    } catch {
+      applyingRemote = false
+      syncReady = true
+      if (userId === activeUid) setSyncStatus('offline')
+    }
+  }
+
   function install() {
+    ForjaStorage.subscribe(onStorageWrite)
     render = renderExperience
     document.addEventListener('submit', handleWeightAndTargetSubmit, true)
     document.addEventListener('submit', handleDailyGoalSubmit, true)

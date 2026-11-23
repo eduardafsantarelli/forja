@@ -15,6 +15,12 @@ import {
   signOut,
   updateProfile,
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'
+import {
+  doc,
+  getDoc,
+  getFirestore,
+  setDoc,
+} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDnZEt7S0l1nJJOYg-ejehTqVjGmu5xubU',
@@ -28,7 +34,22 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig)
 const auth = getAuth(firebaseApp)
+const db = getFirestore(firebaseApp)
+
+// Cópia dos dados de cada conta em usuarios/{uid}. As regras em firestore.rules
+// garantem que só a própria pessoa lê e grava o seu documento.
+const cloud = {
+  async load(uid) {
+    const snapshot = await getDoc(doc(db, 'usuarios', uid))
+    return snapshot.exists() ? snapshot.data() : null
+  },
+  save(uid, data) {
+    return setDoc(doc(db, 'usuarios', uid), data)
+  },
+}
+
 const authApi = {
+  cloud,
   auth,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
