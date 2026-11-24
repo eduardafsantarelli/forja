@@ -20,7 +20,7 @@ test('todo exercício da biblioteca tem demonstração animada', () => {
   const ctx = loadScripts(['storage.js', 'app.js', 'js/animacoes.js'])
   const names = ctx.run('EXERCISE_LIBRARY.map((exercise) => exercise.nome)')
   const missing = names.filter((name) => !ctx.ForjaAnimacoes.patternFor(name))
-  assert.deepEqual(missing, [])
+  assert.equal(missing.length, 0, 'Sem animação: ' + missing.join(', '))
 })
 
 test('sequência de dias ativos conta dias consecutivos até hoje', () => {
