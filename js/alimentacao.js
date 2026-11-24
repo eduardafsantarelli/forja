@@ -58,7 +58,7 @@
     const groups = CATEGORY_ORDER.map((category) => [category, items.filter((item) => (CATEGORY_LABELS[item.categoria] ? item.categoria : 'outros') === category)]).filter(([, list]) => list.length)
     return '<section class="panel shopping-list" aria-labelledby="shopping-title">'
       + '<div class="panel-head"><div><p class="eyebrow orange">PRATICIDADE</p><h3 id="shopping-title">Lista de compras da semana</h3></div><span class="tag">' + items.length + ' ITENS</span></div>'
-      + '<p class="help">Quantidades somadas dos 7 dias do cardápio, já com as porções ajustadas. Arredonde para as embalagens que você encontra.</p>'
+      + '<p class="help">Quantidades somadas dos 7 dias do cardápio, já com as porções ajustadas. Grãos, massas e carnes estão no peso pronto para comer (cozido), que é maior que o peso cru. Arredonde para as embalagens que você encontra.</p>'
       + '<div class="shopping-groups">' + groups.map(([category, list]) => '<div class="shopping-group"><h4>' + CATEGORY_LABELS[category] + '</h4><ul>'
         + list.map((item) => { const key = normalizeName(item.nome); return '<li><label><input type="checkbox" data-shopping-item="' + esc(key) + '"' + (checked.has(key) ? ' checked' : '') + '> <span>' + esc(item.nome) + '</span> <small>' + amountLabel(item) + '</small></label></li>' }).join('')
         + '</ul></div>').join('') + '</div>'

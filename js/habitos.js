@@ -145,7 +145,7 @@
       ['Treinos registrados', String(new Set(executions.map((entry) => entry.date)).size)],
       ['Volume de força', num(Math.round(volume)) + ' kg'],
       ['Refeições registradas', String(state.meals.filter(inMonth).length)],
-      ['Melhor sequência', streaks().best + ' dias'],
+      ['Melhor sequência', streaks().best + (streaks().best === 1 ? ' dia' : ' dias')],
       ['Variação de peso', weightDelta === null ? '—' : (weightDelta > 0 ? '+' : '') + num(weightDelta) + ' kg'],
     ]
     await document.fonts?.ready
