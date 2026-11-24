@@ -334,6 +334,10 @@ function getSessionTargetCount(sessionName, goal) {
   if (goal === 'resistencia muscular') return 4;
   return 4;
 }
+const RECOVERY_SESSION = [
+  { nome: 'Bike', grupo: 'cardio', series: '1', repeticoes: '15-20 min', descanso: '—', primarios: ['quadríceps'], secundarios: ['glúteo máximo', 'panturrilhas'], equipamento: 'bike', tipo: 'composto', instrucoes: 'Ritmo leve, em que dá para conversar sem perder o fôlego.', intensidade: 'leve', volume: 1 },
+  { nome: 'Mobilidade e ativação', grupo: 'core', series: '2', repeticoes: '8-10 por movimento', descanso: '30s', primarios: ['quadril', 'coluna torácica'], secundarios: ['ombros'], equipamento: 'peso corporal', tipo: 'isolado', instrucoes: 'Movimentos amplos e controlados para quadril, coluna e ombros, sempre sem dor.', intensidade: 'leve', volume: 1 },
+];
 function buildSmartWorkoutPlan() {
   const profile = state.profile || {};
   const age = Number(profile.age) || 0;
@@ -416,6 +420,11 @@ function buildSmartWorkoutPlan() {
   const validation = validarTreinoSemanal(semana, level, goal, daysAvailable);
   const aviso = restrictions ? 'Há restrição ou condição informada. Recomendamos avaliação com profissional de saúde/educação física antes de seguir a sugestão de treino.' : '';
   const volumeMeta = goal === 'forca' ? 'volume concentrado e mais pesado' : goal === 'resistencia muscular' ? 'volume moderado com melhor controle do tempo sob tensão' : 'volume crescente com foco em qualidade e recuperação';
+
+  // Dia de recuperação ganha uma sessão leve em vez de ficar vazio.
+  semana.forEach((dia) => {
+    if (dia.treino === 'Recuperação' && !dia.exercicios.length) dia.exercicios = RECOVERY_SESSION.map((exercise) => ({ ...exercise }));
+  });
 
   return {
     usuario: {
