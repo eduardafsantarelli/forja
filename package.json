@@ -1,0 +1,13 @@
+{
+  "name": "forja",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App web de treino, nutrição e evolução",
+  "scripts": {
+    "test": "node --test tests/",
+    "check": "for f in *.js js/*.js data/*.js; do case $f in firebase.js) ;; *) node --check \"$f\" || exit 1;; esac; done"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

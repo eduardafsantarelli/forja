@@ -1,5 +1,7 @@
 # FORJA — Treino & Nutrição
 
+![CI](https://github.com/eduardafsantarelli/forja/actions/workflows/ci.yml/badge.svg)
+
 Aplicação web para acompanhar **treinos, alimentação e evolução de peso** em um só lugar, com login de usuário via Firebase. Projeto desenvolvido para um hackathon.
 
 ## Funcionalidades
@@ -11,6 +13,14 @@ Aplicação web para acompanhar **treinos, alimentação e evolução de peso** 
 - **Alimentação:** cadastro de alimentos (valores por 100 g, com preenchimento automático para alimentos comuns), registro de refeições e cardápio semanal por horário com porções e trocas
 - **Evolução:** histórico de peso e comparação semanal entre treino e variação de peso
 - **Tema claro e escuro**, com a preferência salva no navegador
+- **Treino ao vivo:** registro série por série com cronômetro de descanso, som e vibração; o treino em andamento sobrevive a recarregar a página
+- **Demonstrações animadas** de todos os exercícios da biblioteca
+- **Tabela TACO** (UNICAMP) com 591 alimentos para preencher calorias e macros automaticamente
+- **Lista de compras** gerada do cardápio da semana, com quantidades somadas, para copiar ou imprimir
+- **Hábitos:** água do dia com meta ajustável, sequência de dias ativos, 10 conquistas e resumo mensal em imagem para compartilhar
+- **Medidas corporais** (cintura, quadril, peito, braço e coxa) com histórico e gráfico
+- **Funciona sem internet** (service worker) e mostra um tour de boas-vindas no primeiro acesso
+- **Privacidade:** política em linguagem simples e consentimento no cadastro, como pede a LGPD para dados de saúde
 - **Dados de demonstração** (com confirmação antes de substituir os registros atuais) para explorar o app rapidamente
 - **Backup e privacidade:** exportar os registros em JSON e apagar os dados da conta em **Meu perfil**
 - **Sincronização entre aparelhos** pelo Cloud Firestore, quando ativado no projeto
@@ -49,6 +59,17 @@ Depois abra `http://localhost:8000` e crie uma conta no primeiro acesso.
 - Com o Firestore ativo, uma cópia de cada conta fica em `usuarios/{uid}` e vale a versão alterada por último. As regras permitem que cada pessoa leia e grave apenas o próprio documento
 - Em **Meu perfil > Backup e privacidade**, você exporta os registros ou apaga os dados da conta
 
+## Testes
+
+Os testes usam apenas o Node.js (versão 20 ou mais nova), sem dependências:
+
+```bash
+npm test        # cardápio, gerador de treino, gráficos, TACO, animações e hábitos
+npm run check   # confere a sintaxe de todos os scripts
+```
+
+Os mesmos testes rodam automaticamente no GitHub Actions a cada envio (selo no topo).
+
 ## Cálculos usados
 
 - **Gasto estimado do treino:** força 4 kcal/min e cardio 7 kcal/min
@@ -69,6 +90,11 @@ forja/
 ├── firebase.js     # autenticação, sincronização (Firestore) e Analytics
 ├── firestore.rules # regras de acesso do banco
 ├── manifest.webmanifest # instalação no celular
+├── privacidade.html # Política de Privacidade
+├── sw.js           # funcionamento offline
+├── js/             # recursos extras (treino ao vivo, animações, hábitos, alimentação, privacidade, tour)
+├── data/taco.js    # Tabela Brasileira de Composição de Alimentos
+├── tests/          # testes automatizados (node --test)
 ├── netlify.toml    # publicação e cabeçalhos de segurança
 └── img/            # imagens (WebP) e ícones
 ```
@@ -76,3 +102,5 @@ forja/
 ## Créditos
 
 Foto de treino: [Strength Per Second](https://strengthpersecond.com/).
+
+Composição de alimentos: TACO, 4ª edição (NEPA/UNICAMP), a partir dos dados organizados em [isaquetdiniz/taco-api](https://github.com/isaquetdiniz/taco-api) (MIT).
