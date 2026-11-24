@@ -37,11 +37,19 @@
       if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme
     } catch { /* armazenamento indisponível */ }
   </script>
-  <link rel="stylesheet" href="style.css?v=melhorias-v7">
-  <script defer src="storage.js?v=melhorias-v7"></script>
-  <script defer src="app.js?v=melhorias-v7"></script>
-  <script defer src="experience.js?v=melhorias-v7"></script>
-  <script type="module" src="firebase.js?v=melhorias-v7"></script>
+  <link rel="stylesheet" href="style.css?v=melhorias-v8">
+  <script defer src="storage.js?v=melhorias-v8"></script>
+  <script defer src="app.js?v=melhorias-v8"></script>
+  <script defer src="experience.js?v=melhorias-v8"></script>
+  <script defer src="data/taco.js?v=melhorias-v8"></script>
+  <script defer src="js/hooks.js?v=melhorias-v8"></script>
+  <script defer src="js/treino-ao-vivo.js?v=melhorias-v8"></script>
+  <script defer src="js/animacoes.js?v=melhorias-v8"></script>
+  <script defer src="js/habitos.js?v=melhorias-v8"></script>
+  <script defer src="js/alimentacao.js?v=melhorias-v8"></script>
+  <script defer src="js/privacidade.js?v=melhorias-v8"></script>
+  <script defer src="js/onboarding.js?v=melhorias-v8"></script>
+  <script type="module" src="firebase.js?v=melhorias-v8"></script>
 </head>
 
 <body>
@@ -74,7 +82,7 @@
   <footer>
     <a class="brand" href="#inicio">FORJA<span class="orange">.</span></a>
     <p>Uma repetição. Uma escolha. Um dia de cada vez.</p>
-    <small>Seus registros ficam salvos neste dispositivo.</small>
+    <small>Seus registros ficam salvos neste aparelho e, com a sincronização ativa, na sua conta. <a href="privacidade.html">Política de Privacidade</a></small>
   </footer>
   <dialog id="modal" aria-labelledby="modal-title">
     <div class="modal-top">
@@ -99,6 +107,12 @@
     <p class="help">O login Firebase funciona em qualquer navegador com o mesmo e-mail e senha. Perfil, treinos e registros ficam neste dispositivo, separados por conta, e não são sincronizados entre dispositivos.</p>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
+  <script>
+    // Instala o service worker para o app abrir mesmo sem internet.
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))
+    }
+  </script>
 </body>
 
 </html>

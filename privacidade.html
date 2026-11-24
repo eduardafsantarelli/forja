@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0b">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Como o FORJA coleta, usa e protege os seus dados.">
+  <title>Política de Privacidade — FORJA</title>
+  <link rel="icon" href="img/icon-192.png">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('forja-theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme
+    } catch { /* armazenamento indisponível */ }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css?v=melhorias-v8">
+</head>
+
+<body class="policy-page">
+  <header>
+    <a class="brand" href="index.html#inicio" aria-label="Voltar ao FORJA"><span class="brand-icon">F</span> FORJA</a>
+    <a class="button secondary small" href="index.html#inicio">Voltar ao app</a>
+  </header>
+  <main class="policy" id="conteudo">
+    <p class="eyebrow orange">LGPD · VERSÃO DE NOVEMBRO DE 2026</p>
+    <h1>Política de Privacidade</h1>
+    <p class="policy-lead">O FORJA é um projeto estudantil que ajuda você a acompanhar treinos, alimentação e evolução. Esta página explica, em linguagem simples, quais dados o app usa, para quê e como você controla tudo.</p>
+
+    <h2>1. Quais dados usamos</h2>
+    <ul>
+      <li><strong>Conta de acesso:</strong> nome, e-mail e senha, gerenciados pelo Firebase Authentication (Google). A equipe do FORJA não vê a sua senha.</li>
+      <li><strong>Perfil:</strong> idade, altura, peso, meta de peso, meta de calorias, nível de atividade, objetivo e preferências de treino.</li>
+      <li><strong>Dados de saúde:</strong> alergias, intolerâncias, restrições alimentares, medidas corporais e histórico de peso. A LGPD trata essas informações como dados pessoais sensíveis, por isso só são usadas com o seu consentimento.</li>
+      <li><strong>Registros:</strong> treinos, refeições, metas do dia, água e foto de perfil (opcional).</li>
+      <li><strong>Uso do app:</strong> eventos simples de navegação pelo Firebase Analytics, como "treino gerado", para entender quais funções são mais usadas.</li>
+    </ul>
+
+    <h2>2. Para que usamos</h2>
+    <p>Somente para fazer o app funcionar para você: calcular resumos, gerar sugestões de treino e cardápio, respeitar alergias e restrições e mostrar a sua evolução. Os dados não são vendidos, não são usados para publicidade e não são compartilhados com outras empresas além dos serviços que hospedam o app.</p>
+
+    <h2>3. Onde os dados ficam</h2>
+    <ul>
+      <li><strong>No seu navegador</strong> (armazenamento local), separados por conta.</li>
+      <li><strong>No Cloud Firestore (Google)</strong>, quando a sincronização entre aparelhos está ativa: uma cópia fica no documento da sua conta, que só você consegue ler e alterar.</li>
+      <li>O app é publicado no Netlify, e o login e a sincronização usam serviços do Google. Esses provedores podem processar dados fora do Brasil, seguindo as próprias políticas de segurança.</li>
+    </ul>
+
+    <h2>4. Base legal</h2>
+    <p>Usamos os dados com base no seu <strong>consentimento</strong>, pedido ao criar a conta. Você pode retirar o consentimento quando quiser, apagando os dados como explicado abaixo.</p>
+
+    <h2>5. Seus direitos e como exercê-los</h2>
+    <ul>
+      <li><strong>Ver e levar seus dados:</strong> em Meu perfil &gt; Backup e privacidade &gt; <em>Exportar registros</em>, você baixa tudo em um arquivo.</li>
+      <li><strong>Corrigir:</strong> edite qualquer informação em Meu perfil ou exclua registros nas próprias telas.</li>
+      <li><strong>Apagar:</strong> em Meu perfil &gt; Backup e privacidade &gt; <em>Apagar dados</em>, os registros da conta são removidos deste aparelho e da cópia sincronizada.</li>
+      <li><strong>Excluir a conta de acesso ou tirar dúvidas:</strong> fale com a equipe pelo GitHub do projeto, em <a href="https://github.com/eduardafsantarelli" rel="noopener">github.com/eduardafsantarelli</a>. Nunca envie senhas por esse canal.</li>
+    </ul>
+
+    <h2>6. Segurança</h2>
+    <p>O acesso usa conexão segura (HTTPS) e login do Firebase. As regras do banco permitem que cada pessoa acesse apenas os próprios dados. Ainda assim, nenhum sistema é totalmente imune a falhas: use uma senha forte e não a compartilhe.</p>
+
+    <h2>7. Crianças e adolescentes</h2>
+    <p>O FORJA não é destinado a menores de 18 anos sem acompanhamento de um responsável.</p>
+
+    <h2>8. Aviso importante</h2>
+    <p>As sugestões de treino e alimentação são educativas e não substituem a orientação de médicos, nutricionistas ou profissionais de educação física.</p>
+
+    <h2>9. Mudanças nesta política</h2>
+    <p>Se esta política mudar, o app avisará e pedirá uma nova confirmação.</p>
+  </main>
+  <footer>
+    <a class="brand" href="index.html#inicio">FORJA<span class="orange">.</span></a>
+    <p>Uma repetição. Uma escolha. Um dia de cada vez.</p>
+  </footer>
+</body>
+
+</html>
